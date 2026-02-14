@@ -1,0 +1,315 @@
+#!/bin/sh
+echo "Content-type: application/json; charset=utf-8"
+echo "Cache-Control: no-store"
+echo ""
+
+VERSION="2026-02-09-24-AUTH"
+
+# Map logical bands (wl0/wl1) to actual Xiaomi interfaces.
+IFACE_WL0="wl0"
+IFACE_WL1="wl1"
+
+MI_IP_DEFAULT="192.168.10.10"
+MI_IP="$(uci -q get wifi_monitor.main.mi_ip)"
+[ -z "$MI_IP" ] && MI_IP="$MI_IP_DEFAULT"
+ACL_FILE="/etc/config/wifi_ACLlist"
+SSH_BIN="ssh"
+SSH_OPTS="-o ConnectTimeout=3 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedAlgorithms=+ssh-rsa"
+
+# --- Helper Functions ---
+
+map_iface() {
+    case "$1" in
+        wl0) echo "$IFACE_WL0" ;;
+        wl1) echo "$IFACE_WL1" ;;
+        *) echo "$1" ;;
+    esac
+}
+
+extract_qs() {
+    __s="$1"
+    [ -z "$__s" ] && { printf '%s' ""; return; }
+    case "$__s" in
+        *\?*) printf '%s' "${__s#*\?}"; return ;;
+    esac
+    if echo "$__s" | grep -q '=' && ! echo "$__s" | grep -q '/'; then
+        printf '%s' "$__s"
+        return
+    fi
+    printf '%s' ""
+}
+
+get_query_string() {
+    __qs=$(extract_qs "$QUERY_STRING")
+    [ -n "$__qs" ] && { printf '%s' "$__qs"; return; }
+    __qs=$(extract_qs "$REQUEST_URI")
+    [ -n "$__qs" ] && { printf '%s' "$__qs"; return; }
+    __qs=$(extract_qs "$RAW_URI")
+    [ -n "$__qs" ] && { printf '%s' "$__qs"; return; }
+    __qs=$(extract_qs "$HTTP_X_ORIGINAL_URI")
+    [ -n "$__qs" ] && { printf '%s' "$__qs"; return; }
+    __qs=$(extract_qs "$HTTP_X_ORIGINAL_URL")
+    [ -n "$__qs" ] && { printf '%s' "$__qs"; return; }
+    __qs=$(extract_qs "$HTTP_X_REWRITE_URL")
+    [ -n "$__qs" ] && { printf '%s' "$__qs"; return; }
+    __qs=$(extract_qs "$HTTP_X_REQUEST_URI")
+    [ -n "$__qs" ] && { printf '%s' "$__qs"; return; }
+    __qs=$(extract_qs "$HTTP_X_FORWARDED_URI")
+    [ -n "$__qs" ] && { printf '%s' "$__qs"; return; }
+    printf '%s' ""
+}
+
+qs_get() {
+    __key="$1"
+    __qs="$2"
+    [ -z "$__qs" ] && { printf '%s' ""; return; }
+    __oldifs="$IFS"
+    IFS='&'
+    set -- $__qs
+    IFS="$__oldifs"
+    for __kv in "$@"; do
+        case "$__kv" in
+            "$__key="*) printf '%s' "${__kv#*=}"; return ;;
+        esac
+    done
+    printf '%s' ""
+}
+
+urldecode() {
+    echo "$1" | sed 's/+/ /g; s/%3[aA]/:/g; s/%2[cC]/,/g; s|%2[fF]|/|g; s/%20/ /g'
+}
+
+decode_mac() {
+    __m="$1"
+    __m="${__m//%3A/:}"
+    __m="${__m//%3a/:}"
+    echo "$__m"
+}
+
+list_json() {
+    if [ ! -f "$ACL_FILE" ]; then
+        echo "{\"wl0\":[],\"wl1\":[]}"
+        return
+    fi
+    awk -F'|' '
+        function esc(s) { gsub(/\\/,"\\\\",s); gsub(/\"/,"\\\"",s); return s }
+        BEGIN { wl0=""; wl1="" }
+        $1=="wl0" {
+            mac=toupper($2); name=$3; ip=$4;
+            if (wl0!="") wl0=wl0",";
+            wl0=wl0"{\"mac\":\""mac"\",\"name\":\""esc(name)"\",\"ip\":\""esc(ip)"\"}"
+        }
+        $1=="wl1" {
+            mac=toupper($2); name=$3; ip=$4;
+            if (wl1!="") wl1=wl1",";
+            wl1=wl1"{\"mac\":\""mac"\",\"name\":\""esc(name)"\",\"ip\":\""esc(ip)"\"}"
+        }
+        END { printf "{\"wl0\":[%s],\"wl1\":[%s]}", wl0, wl1 }
+    ' "$ACL_FILE"
+}
+
+normalize_mac() {
+    echo "$1" | tr 'a-z' 'A-Z'
+}
+
+mac_valid() {
+    echo "$1" | grep -Eq '^[0-9A-F]{2}(:[0-9A-F]{2}){5}$'
+}
+
+bands_from() {
+    __raw="$1"
+    __b=$(echo "$__raw" | tr 'A-Z' 'a-z')
+    __out=""
+    echo "$__b" | grep -Eq '(wl0|5g)' && __out="$__out wl0"
+    echo "$__b" | grep -Eq '(wl1|2\\.4|24g)' && __out="$__out wl1"
+    if [ -z "$__out" ]; then
+        __out="wl0 wl1"
+    fi
+    echo "$__out"
+}
+
+run_remote() {
+    $SSH_BIN $SSH_OPTS root@$MI_IP "$1" >/dev/null 2>&1
+}
+
+run_remote_chain() {
+    $SSH_BIN $SSH_OPTS root@$MI_IP "PATH=/usr/sbin:/sbin:/usr/bin:/bin; $1" >/dev/null 2>&1
+}
+
+run_remote_chain_capture() {
+    $SSH_BIN $SSH_OPTS root@$MI_IP "PATH=/usr/sbin:/sbin:/usr/bin:/bin; $1" 2>&1
+}
+
+run_remote_capture() {
+    $SSH_BIN $SSH_OPTS root@$MI_IP "$1" 2>&1
+}
+
+json_escape() {
+    printf '%s' "$1" | tr -d '\r' | sed 's|\\|\\\\|g; s|"|\\"|g' | awk '{printf "%s\\n", $0}'
+}
+
+sanitize_token() {
+    echo "$1" | tr -d '\r' | tr -d '\n' | tr -d ' \t'
+}
+
+sanitize_field() {
+    echo "$1" | tr -d '\r' | tr -d '\n' | tr -d '|'
+}
+
+require_auth() {
+    __sid=$(printf '%s' "$HTTP_COOKIE" | tr ';' '\n' | sed -n 's/^[[:space:]]*sysauth=\(.*\)$/\1/p' | head -n 1)
+    [ -z "$__sid" ] && return 1
+    ubus call session get "{\"sid\":\"$__sid\"}" 2>/dev/null | grep -q '"values"' || return 1
+    return 0
+}
+
+# --- Main Logic ---
+
+QS=$(get_query_string)
+QS=$(printf '%s' "$QS" | tr -d '\r')
+RAW_DEBUG="$(qs_get debug "$QS")"
+DEBUG=$(urldecode "$RAW_DEBUG")
+[ -z "$DEBUG" ] && DEBUG="$RAW_DEBUG"
+
+if ! require_auth; then
+    echo "{\"ok\":false,\"error\":\"unauthorized\",\"version\":\"$VERSION\"}"
+    exit 0
+fi
+
+if [ -z "$QS" ]; then
+    if [ "$DEBUG" = "1" ]; then
+        echo "{\"ok\":false,\"error\":\"empty query\",\"version\":\"$VERSION\"}"
+        exit 0
+    fi
+    list_json
+    exit 0
+fi
+
+RAW_ACTION="$(qs_get action "$QS")"
+RAW_MAC="$(qs_get mac "$QS")"
+RAW_BANDS="$(qs_get bands "$QS")"
+RAW_NAME="$(qs_get name "$QS")"
+RAW_IP="$(qs_get ip "$QS")"
+ACTION=$(urldecode "$RAW_ACTION")
+[ -z "$ACTION" ] && ACTION="$RAW_ACTION"
+MAC=$(normalize_mac "$(decode_mac "$RAW_MAC")")
+BANDS_RAW=$(urldecode "$RAW_BANDS")
+[ -z "$BANDS_RAW" ] && BANDS_RAW="$RAW_BANDS"
+BANDS_RAW=$(sanitize_token "$BANDS_RAW")
+NAME=$(sanitize_field "$(urldecode "$RAW_NAME")")
+IP_ADDR=$(sanitize_field "$(urldecode "$RAW_IP")")
+
+if [ -z "$ACTION" ]; then
+    echo "{\"ok\":false,\"error\":\"missing action\",\"version\":\"$VERSION\"}"
+    exit 0
+fi
+if [ "$ACTION" = "list" ]; then
+    list_json
+    exit 0
+fi
+if [ "$ACTION" = "probe" ]; then
+    HOST=$(run_remote_capture "uname -n")
+    UNAME=$(run_remote_capture "uname -a")
+    IWPRIV=$(run_remote_capture "command -v iwpriv")
+    IFACE=$(run_remote_capture "iwconfig 2>/dev/null | head -n 12")
+    IWDEV=$(run_remote_capture "iw dev 2>/dev/null | head -n 40")
+    SYSNET=$(run_remote_capture "ls /sys/class/net 2>/dev/null | tr '\n' ' '")
+    echo "{\"ok\":true,\"version\":\"$VERSION\",\"mi_ip\":\"$MI_IP\",\"host\":\"$(json_escape "$HOST")\",\"uname\":\"$(json_escape "$UNAME")\",\"iwpriv\":\"$(json_escape "$IWPRIV")\",\"iface_wl0\":\"$IFACE_WL0\",\"iface_wl1\":\"$IFACE_WL1\",\"ifaces\":\"$(json_escape "$IFACE")\",\"iwdev\":\"$(json_escape "$IWDEV")\",\"sysnet\":\"$(json_escape "$SYSNET")\"}"
+    exit 0
+fi
+
+if ! mac_valid "$MAC"; then
+    echo "{\"ok\":false,\"error\":\"invalid mac\",\"version\":\"$VERSION\",\"raw_mac\":\"$RAW_MAC\",\"mac\":\"$MAC\"}"
+    exit 0
+fi
+
+[ -f "$ACL_FILE" ] || touch "$ACL_FILE"
+BANDS=$(bands_from "$BANDS_RAW")
+
+ok=1
+failed=""
+for band in $BANDS; do
+    band=$(sanitize_token "$band")
+    iface="$(map_iface "$band")"
+    iface=$(sanitize_token "$iface")
+    [ -z "$iface" ] && iface="$band"
+
+    if [ "$ACTION" = "ban" ]; then
+        # 1. AccessPolicy=2 (开启黑名单模式/拒绝模式)
+        # 2. ACLAddEntry="MAC" (添加 MAC)
+        # 3. AccessPolicy=2 (再次确认策略，确保生效 - 虽然是重复操作，但能保证触发驱动刷新)
+        
+        # 关键修正：使用 \"$MAC\" 而不是 \\\"$MAC\\\"。
+        # 这样远程收到的命令是：... ACLAddEntry="44:71:..." 
+        # 引号会被 shell 解析为字符串边界，iwpriv 收到的是干净的 MAC。
+        
+        CMD="iwpriv $iface set AccessPolicy=2; iwpriv $iface set ACLAddEntry=\"$MAC\"; iwpriv $iface set AccessPolicy=2"
+        
+        if [ "$DEBUG" = "1" ]; then
+            OUT=$(run_remote_chain_capture "$CMD")
+            RC=$?
+            if [ $RC -eq 0 ]; then
+                grep -Fqi "$band|$MAC|" "$ACL_FILE" || echo "$band|$MAC|$NAME|$IP_ADDR" >> "$ACL_FILE"
+                echo "{\"ok\":true,\"version\":\"$VERSION\",\"bands\":\"$band\",\"iface\":\"$iface\",\"rc\":0,\"cmd\":\"$(json_escape "$CMD")\",\"out\":\"$(json_escape "$OUT")\"}"
+                exit 0
+            else
+                echo "{\"ok\":false,\"error\":\"ssh failed\",\"version\":\"$VERSION\",\"bands\":\"$band\",\"iface\":\"$iface\",\"rc\":$RC,\"cmd\":\"$(json_escape "$CMD")\",\"out\":\"$(json_escape "$OUT")\"}"
+                exit 0
+            fi
+        else
+            if run_remote_chain "$CMD"; then
+                grep -Fqi "$band|$MAC|" "$ACL_FILE" || echo "$band|$MAC|$NAME|$IP_ADDR" >> "$ACL_FILE"
+            else
+                ok=0
+                failed="$failed $band"
+            fi
+        fi
+
+    elif [ "$ACTION" = "unban" ]; then
+        # 解封逻辑保持不变
+        CMD="iwpriv $iface set ACLDelEntry=\"$MAC\""
+        
+        if [ "$DEBUG" = "1" ]; then
+            OUT=$(run_remote_chain_capture "$CMD")
+            RC=$?
+            if [ $RC -eq 0 ]; then
+                tmp="${ACL_FILE}.tmp"
+                grep -Fiv "$band|$MAC|" "$ACL_FILE" > "$tmp" 2>/dev/null || true
+                mv "$tmp" "$ACL_FILE"
+                
+                # 检查是否还有其他黑名单，决定是否关闭 Policy 2
+                if ! grep -Fqi "$band|" "$ACL_FILE"; then
+                    run_remote_chain "iwpriv $iface set AccessPolicy=0"
+                else
+                    run_remote_chain "iwpriv $iface set AccessPolicy=2"
+                fi
+                echo "{\"ok\":true,\"version\":\"$VERSION\",\"bands\":\"$band\",\"iface\":\"$iface\",\"rc\":0,\"cmd\":\"$(json_escape "$CMD")\",\"out\":\"$(json_escape "$OUT")\"}"
+                exit 0
+            else
+                echo "{\"ok\":false,\"error\":\"ssh failed\",\"version\":\"$VERSION\",\"bands\":\"$band\",\"iface\":\"$iface\",\"rc\":$RC,\"cmd\":\"$(json_escape "$CMD")\",\"out\":\"$(json_escape "$OUT")\"}"
+                exit 0
+            fi
+        elif run_remote_chain "$CMD"; then
+            tmp="${ACL_FILE}.tmp"
+            grep -Fiv "$band|$MAC|" "$ACL_FILE" > "$tmp" 2>/dev/null || true
+            mv "$tmp" "$ACL_FILE"
+            if ! grep -Fqi "$band|" "$ACL_FILE"; then
+                run_remote_chain "iwpriv $iface set AccessPolicy=0"
+            else
+                run_remote_chain "iwpriv $iface set AccessPolicy=2"
+            fi
+        else
+            ok=0
+            failed="$failed $band"
+        fi
+    else
+        echo "{\"ok\":false,\"error\":\"unknown action\",\"version\":\"$VERSION\"}"
+        exit 0
+    fi
+done
+
+if [ "$ok" -eq 1 ]; then
+    echo "{\"ok\":true,\"version\":\"$VERSION\"}"
+else
+    echo "{\"ok\":false,\"error\":\"ssh failed\",\"bands\":\"$failed\",\"version\":\"$VERSION\"}"
+fi

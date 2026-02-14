@@ -1,0 +1,19 @@
+{
+    "luci-app-wifi-monitor": {
+        "description": "WiFi Monitor Access Control",
+        "read": {
+            "cgi": [
+                "/www/cgi-bin/api_wifi_json",
+                "/www/cgi-bin/api_wifi_acl",
+                "/www/cgi-bin/get_vendor"
+            ]
+        },
+        "write": {
+            "cgi": [
+                "/www/cgi-bin/api_wifi_json",
+                "/www/cgi-bin/api_wifi_acl",
+                "/www/cgi-bin/get_vendor"
+            ]
+        }
+    }
+}

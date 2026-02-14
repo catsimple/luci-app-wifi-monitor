@@ -1,0 +1,42 @@
+#!/bin/sh
+echo "Content-type: application/json; charset=utf-8"
+echo ""
+
+MI_IP_DEFAULT="192.168.10.10"
+MI_IP="$(uci -q get wifi_monitor.main.mi_ip)"
+[ -z "$MI_IP" ] && MI_IP="$MI_IP_DEFAULT"
+DHCP_FILE="/tmp/dhcp.leases"
+SSH_BIN="ssh"
+SSH_OPTS="-o ConnectTimeout=3 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedAlgorithms=+ssh-rsa"
+
+# 抓取数据，增加超时控制
+WIFI_RAW=$($SSH_BIN $SSH_OPTS root@$MI_IP "iwinfo wl0 assoclist && echo '---SPLIT---' && iwinfo wl1 assoclist" 2>/dev/null)
+
+if [ -z "$WIFI_RAW" ]; then
+    echo "[]"
+    exit 0
+fi
+
+# 使用简洁的 awk 逻辑，确保输出是严格的 JSON 数组
+awk -v wifi_data="$WIFI_RAW" '
+BEGIN {
+    while ((getline < "'"$DHCP_FILE"'") > 0) {
+        mac = toupper($2); ip[mac] = $3; name[mac] = $4
+    }
+    n = split(wifi_data, lines, "\n")
+    band = "5GHz"; count = 0; printf "["
+    for (i = 1; i <= n; i++) {
+        line = lines[i]
+        if (index(line, "---SPLIT---") > 0) { band = "2.4GHz"; continue }
+        if (line ~ /^[0-9A-F]{2}:[0-9A-F]{2}:[0-9A-F]{2}:[0-9A-F]{2}:[0-9A-F]{2}:[0-9A-F]{2}/) {
+            split(line, cols)
+            m = toupper(cols[1]); p = tolower(cols[2]); r = cols[4]; rt = cols[12]
+            cip = ip[m]; if (cip == "") cip = "-"
+            cnm = name[m]; if (cnm == "" || cnm == "*") cnm = "未知设备"
+            if (count > 0) printf ","
+            printf "{\"mac\":\"%s\",\"ip\":\"%s\",\"name\":\"%s\",\"band\":\"%s\",\"rssi\":%d,\"rate\":\"%s\",\"phy\":\"%s\"}", m, cip, cnm, band, r, rt, p
+            count++
+        }
+    }
+    printf "]"
+}'

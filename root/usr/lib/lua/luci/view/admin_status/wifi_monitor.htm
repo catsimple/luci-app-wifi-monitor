@@ -1,0 +1,3137 @@
+<%+header%>
+
+<style>
+    /* Base layout */
+    #app-wifi-monitor { padding: 16px 18px; background: transparent !important; color: #1f2937; }
+
+    .wm-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+        padding: 10px 12px;
+        border-radius: 14px;
+        border: 1px solid #e5e7eb;
+        background: linear-gradient(135deg, #e9f0ff 0%, #f7f9fc 60%, #ffffff 100%);
+        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+    }
+    .wm-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        padding: 0 4px;
+        width: 100%;
+    }
+    .wm-title {
+        font-weight: 700;
+        margin: 0;
+        color: #111827;
+        font-size: 1.2rem;
+        letter-spacing: 0.2px;
+        background: #ffffff;
+        border-radius: 10px;
+        padding: 6px 12px;
+        box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08);
+    }
+    .wm-count {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin-left: 10px;
+        padding: 2px 8px;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: #1f2937;
+        background: #eef2ff;
+    }
+    .wm-actions { display: flex; gap: 10px; align-items: center; }
+    .wm-link { font-size: 0.75rem; color: #6b7280; cursor: pointer; }
+
+    #app-wifi-monitor .btn-primary {
+        border-radius: 8px;
+        font-size: 0.78rem;
+        padding: 0.35rem 0.9rem;
+        background: #2b6cff;
+        border-color: #2b6cff;
+        box-shadow: 0 6px 12px rgba(43, 108, 255, 0.2);
+    }
+    #app-wifi-monitor .btn-primary:focus {
+        box-shadow: 0 0 0 0.2rem rgba(43, 108, 255, 0.25);
+    }
+    #app-wifi-monitor .btn-secondary {
+        border-radius: 8px;
+        font-size: 0.78rem;
+        padding: 0.35rem 0.85rem;
+        background: #ffffff;
+        border: 1px solid #d7dce5;
+        color: #374151;
+        box-shadow: 0 6px 12px rgba(15, 23, 42, 0.06);
+    }
+    #app-wifi-monitor .btn-secondary:hover {
+        background: #f3f6fb;
+    }
+
+    /* Mobile: maximize horizontal space */
+    @media (max-width: 768px) {
+        #app-wifi-monitor { padding: 6px 0 !important; }
+        .wm-toolbar { padding: 0 8px; }
+        .wm-title { font-size: 1.05rem; }
+        .card { border-radius: 0 !important; border: none !important; box-shadow: none !important; }
+        .v-icon-box { width: 28px !important; height: 28px !important; margin-right: 4px !important; }
+        .v-icon-box i { font-size: 1rem !important; }
+        .v-icon-box img {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: contain;
+            padding: 6px;
+            box-sizing: border-box;
+            border-radius: 9px;
+        }
+        .ip-text { font-size: 0.72rem !important; letter-spacing: -0.4px; }
+        .table td, .table th { padding: 8px 4px !important; }
+        .custom-badge { padding: 2px 4px !important; font-size: 0.6rem !important; }
+        .rssi-val small { display: none; }
+        #app-wifi-monitor .rssi-val { 
+                display: flex; 
+                flex-direction: column; 
+                align-items: center; 
+                line-height: 1; 
+                gap: 2px;
+            }
+            #app-wifi-monitor .rssi-val i { font-size: 1.1rem; }
+        #app-wifi-monitor .device-name-row { flex-direction: column; align-items: flex-start; gap: 2px; }
+        #app-wifi-monitor .device-sub { margin-top: 2px; }
+        #app-wifi-monitor .device-mac, #app-wifi-monitor .vendor-detail { font-size: 0.62rem; }
+        #app-wifi-monitor .device-name { max-width: 100%; }
+
+        #app-wifi-monitor .vendor-detail { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        #app-wifi-monitor .device-sub { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        #app-wifi-monitor .device-mac { word-break: normal; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
+
+        #app-wifi-monitor td.col-band-cell { white-space: normal; }
+
+        .col-info { width: 20% !important; }
+        .col-ip   { width: 23% !important; }
+        .col-band { width: 14% !important; }
+        .col-sig  { width: 14% !important; }
+        .col-rate { width: 23% !important; }
+        #app-wifi-monitor table col.col-info { width: 24% !important; }
+        #app-wifi-monitor table col.col-ip   { width: 25% !important; }
+        #app-wifi-monitor table col.col-band { width: 14% !important; }
+        #app-wifi-monitor table col.col-sig  { width: 14% !important; }
+        #app-wifi-monitor table col.col-rate { width: 23% !important; }
+    }
+
+    /* Large screens */
+    @media (min-width: 1200px) {
+        #app-wifi-monitor { padding: 20px 28px; }
+        .wm-title { font-size: 1.6rem; }
+        .table thead th { font-size: 0.95rem; }
+        .table tbody td { font-size: 0.95rem; padding: 14px 12px; }
+        .ip-text { font-size: 0.95rem; }
+        .v-icon-box { width: 46px; height: 46px; }
+        .v-icon-box i { font-size: 1.4rem; }
+        .device-name { font-size: 1rem; }
+        .device-mac, .vendor-detail { font-size: 0.98rem; color: #4b5563; }
+    }
+
+    .card {
+        border: none !important;
+        box-shadow: 0 0.5rem 1.1rem rgba(0, 0, 0, 0.08) !important;
+        border-radius: 12px !important;
+        background-color: #fff !important;
+        overflow: hidden;
+    }
+
+    /* Table alignment */
+    .table { width: 100%; margin: 0; border-collapse: collapse !important; table-layout: fixed; }
+    #app-wifi-monitor .table { table-layout: fixed !important; }
+    .table thead th {
+        background-color: #fafafa !important;
+        color: #888 !important;
+        font-weight: 600;
+        font-size: 0.85rem;
+        padding: 12px 10px;
+        border-bottom: 1px solid #eee !important;
+        text-align: left !important;
+        cursor: pointer;
+    }
+    .table tbody td {
+        padding: 12px 10px;
+        border-bottom: 1px solid #f8f8f8 !important;
+        vertical-align: middle;
+        text-align: left !important;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .table tbody tr:hover td { background: #f7f9fc; }
+    .table tbody tr:nth-child(even) td { background: #fcfcfd; }
+
+    /* Column widths */
+    .col-info { width: 32%; }
+    .col-ip   { width: 24%; }
+    .col-band { width: 14%; }
+    .col-sig  { width: 15%; }
+    .col-rate { width: 15%; }
+    #app-wifi-monitor table col.col-info { width: 32%; }
+    #app-wifi-monitor table col.col-ip   { width: 24%; }
+    #app-wifi-monitor table col.col-band { width: 14%; }
+    #app-wifi-monitor table col.col-sig  { width: 15%; }
+    #app-wifi-monitor table col.col-rate { width: 15%; }
+
+    .ip-text { color: #444 !important; font-family: "SFMono-Regular", Consolas, monospace; font-weight: 500; font-size: 0.85rem; }
+
+    .v-icon-box {
+        width: 36px; height: 36px; border-radius: 10px;
+        display: flex; align-items: center; justify-content: center;
+        margin-right: 9px; border: 1px solid #eee;
+        background: #fff; flex-shrink: 0;
+        overflow: hidden;
+    }
+    .v-icon-box img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        padding: 3px;
+        box-sizing: border-box;
+        border-radius: 9px;
+    }
+    .v-icon-box i { font-size: 1.25rem; line-height: 1; }
+
+    .device-text { min-width: 0; flex: 1; width: 100%; }
+    .device-name-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        min-width: 0;
+        width: 100%;
+        overflow: hidden;
+    }
+    .device-name {
+        font-weight: 700;
+        color: #1f2937;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        overflow: hidden;
+        min-width: 0;
+        max-width: 100%;
+        display: block;
+        flex: 1 1 auto;
+    }
+    .brand-tag { flex: 0 0 auto; margin-left: 0; }
+    .tag-row { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; }
+    .type-tag { background: #64748b !important; }
+    .device-sub { margin-top: 2px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .device-mac { font-size: 0.8rem; color: #9aa0a6; font-family: "SFMono-Regular", Consolas, monospace; }
+    .vendor-detail { font-size: 0.72rem; color: #b0b5bf; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; display: block; }
+
+    .table tbody td.col-info-cell { white-space: normal; }
+    #app-wifi-monitor td.col-info-cell { min-width: 0; overflow: hidden; }
+    #app-wifi-monitor .device-text { overflow: hidden; }
+    #app-wifi-monitor .device-name,
+    #app-wifi-monitor .vendor-detail {
+        max-width: 100%;
+        width: 100%;
+        display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    #app-wifi-monitor td.col-info-cell { min-width: 0; }
+    #app-wifi-monitor .device-name,
+    #app-wifi-monitor .vendor-detail {
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .rate-val { font-weight: 700; color: #1f2937; }
+    .rate-unit { color: #6b7280; font-size: inherit; margin-left: 4px; }
+
+    .custom-badge {
+        padding: 2.5px 4px !important;
+        border-radius: 4px !important;
+        font-size: 0.72rem !important;
+        font-weight: 550 !important;
+        color: #fff !important;
+        display: inline-block;
+        line-height: 1.1;
+        white-space: nowrap;
+    }
+
+    .wm-row-clickable { cursor: pointer; }
+    .wm-row-banned td { background: #fff1f2; }
+    .wm-ban-badge { background: #dc3545 !important; margin-left: 6px; }
+
+    .wm-modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.45);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        padding: 16px;
+        overflow: auto;
+    }
+    .wm-modal {
+        width: min(440px, 92vw);
+        background: #ffffff;
+        border-radius: 14px;
+        box-shadow: 0 20px 50px rgba(15, 23, 42, 0.35);
+        padding: 16px;
+        max-height: 92vh;
+        display: flex;
+        flex-direction: column;
+    }
+    .wm-modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+    }
+    .wm-modal-title { font-weight: 700; font-size: 1rem; color: #111827; }
+    .wm-modal-close {
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        font-size: 1.1rem;
+        color: #6b7280;
+    }
+    .wm-modal-body { margin-top: 10px; display: flex; flex-direction: column; gap: 10px; overflow: auto; }
+    .wm-device-brief { display: flex; flex-direction: column; gap: 2px; }
+    .wm-device-name { font-weight: 700; color: #111827; }
+    .wm-device-meta { font-size: 0.78rem; color: #6b7280; font-family: "SFMono-Regular", Consolas, monospace; }
+    .wm-status-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .wm-status-pill {
+        font-size: 0.74rem;
+        padding: 2px 8px;
+        border-radius: 999px;
+        font-weight: 700;
+    }
+    .wm-status-on { background: #dc3545; color: #fff; }
+    .wm-status-off { background: #e5e7eb; color: #374151; }
+    .wm-band-options { display: flex; gap: 8px; flex-wrap: wrap; }
+    .wm-band-option {
+        border: 1px solid #e5e7eb;
+        border-radius: 999px;
+        padding: 4px 10px;
+        cursor: pointer;
+        font-size: 0.78rem;
+        background: #f8fafc;
+        color: #111827;
+    }
+    .wm-band-option input { margin-right: 6px; }
+    .wm-modal-footer { display: flex; gap: 8px; justify-content: flex-end; margin-top: 6px; }
+    .wm-saving-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.35);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+    }
+    .wm-saving-panel {
+        background: #ffffff;
+        border-radius: 12px;
+        padding: 16px 18px;
+        min-width: 240px;
+        text-align: center;
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.18);
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .wm-saving-spinner {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        border: 3px solid #e5e7eb;
+        border-top-color: #2b6cff;
+        animation: wm-spin 0.8s linear infinite;
+        margin: 0 auto;
+    }
+    .wm-saving-text { font-size: 0.85rem; color: #111827; font-weight: 600; }
+    @keyframes wm-spin { to { transform: rotate(360deg); } }
+    .wm-btn {
+        border-radius: 10px;
+        border: 1px solid transparent;
+        padding: 0.4rem 0.9rem;
+        font-size: 0.8rem;
+        cursor: pointer;
+        color: #111827;
+    }
+    .wm-btn-danger { background: #dc3545; color: #fff; }
+    .wm-btn-primary { background: #2b6cff; color: #fff; }
+    .wm-btn-ghost { background: #f3f4f6; color: #111827; }
+    .wm-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .wm-input-row { position: relative; display: flex; align-items: center; }
+    .wm-input-row .wm-input { flex: 1 1 auto; padding-right: 2.2rem; }
+    .wm-btn-toggle {
+        position: absolute;
+        right: 6px;
+        top: 50%;
+        transform: translateY(-50%);
+        padding: 0.2rem 0.35rem;
+        font-size: 0.8rem;
+        line-height: 1;
+        border-radius: 8px;
+    }
+    .wm-error { color: #dc3545; font-size: 0.75rem; }
+    .wm-banlist-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .wm-banlist-table th, .wm-banlist-table td { padding: 8px 6px; border-bottom: 1px solid #eef1f6; text-align: left; }
+    .wm-banlist-table th { color: #6b7280; font-weight: 600; font-size: 0.75rem; }
+    .wm-banlist-empty { color: #6b7280; font-size: 0.85rem; text-align: center; padding: 12px 0; }
+    .wm-band-chip { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.72rem; font-weight: 700; background: #eef2ff; color: #4338ca; }
+    .wm-router-grid { display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .wm-router-card {
+        border: 1px solid #eef1f6;
+        border-radius: 14px;
+        padding: 14px;
+        background: linear-gradient(145deg, #f8fafc, #ffffff);
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        box-shadow: 0 10px 18px rgba(15, 23, 42, 0.08);
+    }
+    .wm-router-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+    .wm-router-title { font-weight: 800; color: #111827; font-size: 0.98rem; }
+    .wm-router-sub { color: #6b7280; font-size: 0.75rem; }
+    .wm-router-kv {
+        display: grid;
+        grid-template-columns: minmax(90px, 120px) minmax(0, 1fr);
+        align-items: center;
+        column-gap: 12px;
+        row-gap: 4px;
+        font-size: 0.85rem;
+        padding: 6px 0;
+        border-bottom: 1px dashed #e5e7eb;
+    }
+    .wm-router-kv:last-child { border-bottom: none; }
+    .wm-kv-label { color: #6b7280; font-weight: 600; letter-spacing: 0.2px; }
+    .wm-kv-value { color: #111827; font-weight: 700; text-align: right; word-break: break-word; }
+    .wm-section-title { font-weight: 800; color: #111827; font-size: 0.92rem; margin: 4px 0 2px; }
+    .wm-settings-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 8px 0 2px; }
+    .wm-router-settings { display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .wm-setting-card {
+        border: 1px solid #eef1f6;
+        border-radius: 12px;
+        padding: 12px;
+        background: #ffffff;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        box-shadow: 0 8px 14px rgba(15, 23, 42, 0.06);
+    }
+    .wm-setting-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .wm-setting-title { font-weight: 700; color: #111827; }
+    .wm-setting-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .wm-setting-label { font-size: 0.86rem; color: #6b7280; }
+    .wm-setting-note { font-size: 0.8rem; color: #6b7280; }
+    .wm-inline-row { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+    .wm-inline-label { font-weight: 700; color: #111827; font-size: 0.88rem; }
+    .wm-inline-text { color: #6b7280; font-size: 0.82rem; }
+    .wm-status-good { color: #16a34a; font-weight: 700; }
+    .wm-status-bad { color: #dc2626; font-weight: 700; }
+    .wm-status-warn { color: #f59e0b; font-weight: 700; }
+    .wm-status-neutral { color: #6b7280; font-weight: 600; }
+    .wm-input {
+        width: 100%;
+        border: 1px solid #d7dce5;
+        border-radius: 8px;
+        padding: 6px 10px;
+        font-size: 0.85rem;
+        background: #ffffff;
+        color: #111827;
+    }
+    .wm-input:focus {
+        outline: none;
+        border-color: #2b6cff;
+        box-shadow: 0 0 0 2px rgba(43, 108, 255, 0.15);
+    }
+    .wm-setting-actions { display: flex; gap: 8px; justify-content: flex-end; }
+    .wm-section-card { display: flex; flex-direction: column; gap: 12px; }
+    .wm-section-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .wm-section-title { font-weight: 800; color: #111827; font-size: 0.95rem; }
+    .wm-section-head .wm-section-title { margin: 0; }
+    .wm-section-actions { display: flex; align-items: center; gap: 8px; }
+    .wm-section-body { display: flex; flex-direction: column; gap: 12px; }
+    .wm-switch { position: relative; width: 40px; height: 22px; }
+    .wm-switch input { opacity: 0; width: 0; height: 0; }
+    .wm-slider {
+        position: absolute;
+        cursor: pointer;
+        inset: 0;
+        background: #d1d5db;
+        transition: 0.2s;
+        border-radius: 999px;
+    }
+    .wm-slider:before {
+        position: absolute;
+        content: "";
+        height: 18px;
+        width: 18px;
+        left: 2px;
+        top: 2px;
+        background: #ffffff;
+        transition: 0.2s;
+        border-radius: 50%;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+    }
+    .wm-switch input:checked + .wm-slider { background: #2b6cff; }
+    .wm-switch input:checked + .wm-slider:before { transform: translateX(18px); }
+    .wm-confirm-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+    .wm-confirm-list li { display: flex; justify-content: space-between; gap: 12px; font-size: 0.85rem; }
+    .wm-confirm-label { color: #6b7280; font-weight: 600; }
+    .wm-confirm-value { color: #111827; font-weight: 700; text-align: right; }
+    .wm-modal-wide { width: min(720px, 94vw); }
+    @media (min-width: 1200px) {
+        .wm-modal-wide { width: min(880px, 90vw); }
+    }
+    @media (min-width: 1500px) {
+        .wm-modal-wide { width: min(1020px, 86vw); }
+    }
+    .wm-banlist-cards { display: none; }
+    .wm-ban-card {
+        border: 1px solid #eef1f6;
+        border-radius: 12px;
+        padding: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        background: #ffffff;
+    }
+    .wm-ban-card .title { font-weight: 700; color: #111827; }
+    .wm-ban-card .meta { font-size: 0.76rem; color: #6b7280; font-family: "SFMono-Regular", Consolas, monospace; }
+    .wm-ban-card .row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .wm-ban-card .actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+    @media (max-width: 560px) {
+        .wm-modal-wide { width: min(96vw, 520px); }
+        .wm-banlist-table { display: none; }
+        .wm-banlist-cards { display: flex; flex-direction: column; gap: 8px; }
+        .wm-ban-card .meta { word-break: break-all; }
+        .wm-router-grid { grid-template-columns: 1fr; }
+        .wm-router-kv { grid-template-columns: 1fr; }
+        .wm-kv-value { text-align: left; }
+        .wm-router-head { flex-direction: column; align-items: flex-start; }
+        .wm-router-settings { grid-template-columns: 1fr; }
+        .wm-setting-head { flex-direction: column; align-items: flex-start; }
+        .wm-setting-row { width: 100%; justify-content: space-between; }
+        .wm-confirm-list li { flex-direction: column; align-items: flex-start; }
+        .wm-confirm-value { text-align: left; }
+    }
+
+    .bg-5g { background-color: #0d6efd !important; }
+    .bg-24g { background-color: #78909c !important; }
+    .bg-wifi6 { 
+    background: linear-gradient(45deg, #f59e0b, #8b5cf6) !important;
+    color: #ffffff !important;
+    border: none !important;
+}
+    .bg-wifi5 { background: linear-gradient(45deg, #00c6ff, #0072ff) !important; }
+
+    .sig-excellent { color: #198754 !important; }
+    .sig-good { color: #20c997 !important; }
+    .sig-fair { color: #fd7e14 !important; }
+    .sig-poor { color: #dc3545 !important; }
+
+    [v-cloak] { display: none; }
+
+    /* Dark mode support */
+    @media (prefers-color-scheme: dark) {
+        #app-wifi-monitor { color: #e5e7eb; }
+        .wm-header { background: linear-gradient(135deg, #1f2937 0%, #111827 100%); border-color: #2f3642; box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35); }
+        .wm-title { background: #0f172a; color: #e5e7eb; box-shadow: none; }
+        .wm-title { color: #f3f4f6; }
+        .wm-link { color: #cbd5e1; }
+        .card { background-color: #1f2329 !important; box-shadow: 0 0.6rem 1.2rem rgba(0, 0, 0, 0.35) !important; }
+        .table thead th { background-color: #242933 !important; color: #cbd5e1 !important; border-bottom-color: #2f3642 !important; }
+        .table tbody td { border-bottom-color: #2a2f39 !important; }
+        .table tbody tr:hover td { background: #222833; }
+        .table tbody tr:nth-child(even) td { background: #1e242f; }
+        .wm-row-banned td { background: #2a1d22; }
+        .ip-text { color: #d1d5db !important; }
+        .v-icon-box { background: #1b2029; border-color: #2a2f39; }
+        .device-name { color: #f3f4f6; }
+        .rate-val { color: #e5e7eb; }
+        .rate-unit { color: #cbd5e1; }
+        .wm-modal { background: #1f2329; }
+        .wm-modal-title, .wm-device-name { color: #f3f4f6; }
+        .wm-device-meta { color: #9ca3af; }
+        .wm-status-off { background: #374151; color: #e5e7eb; }
+        .wm-band-option { background: #111827; border-color: #374151; color: #e5e7eb; }
+        .wm-btn-ghost { background: #374151; color: #e5e7eb; }
+        #app-wifi-monitor .btn-secondary { background: #111827; border-color: #374151; color: #e5e7eb; }
+        .wm-banlist-table th, .wm-banlist-table td { border-bottom-color: #2a2f39; }
+        .wm-band-chip { background: #1f2937; color: #c7d2fe; }
+        .wm-ban-card { background: #111827; border-color: #2a2f39; }
+        .wm-ban-card .title { color: #e5e7eb; }
+        .wm-ban-card .meta { color: #9ca3af; }
+        .wm-router-card { background: #111827; border-color: #2a2f39; box-shadow: none; }
+        .wm-router-kv { border-bottom-color: #2a2f39; }
+        .wm-router-title, .wm-kv-value { color: #f3f4f6; }
+        .wm-router-sub, .wm-kv-label { color: #9ca3af; }
+        .wm-setting-card { background: #111827; border-color: #2a2f39; box-shadow: none; }
+        .wm-setting-title { color: #f3f4f6; }
+        .wm-section-title { color: #f3f4f6; }
+        
+        .wm-setting-label, .wm-setting-note { color: #9ca3af; }
+        .wm-input { background: #0f172a; border-color: #374151; color: #f3f4f6; }
+        .wm-slider { background: #374151; }
+        .wm-confirm-label { color: #9ca3af; }
+        .wm-confirm-value { color: #f3f4f6; }
+        .wm-saving-panel { background: #1f2329; }
+        .wm-saving-text { color: #e5e7eb; }
+    }
+    body.dark #app-wifi-monitor .wm-title,
+    html.dark #app-wifi-monitor .wm-title { color: #f3f4f6; }
+    body.dark #app-wifi-monitor .wm-link,
+    html.dark #app-wifi-monitor .wm-link { color: #cbd5e1; }
+    body.dark #app-wifi-monitor .card,
+    html.dark #app-wifi-monitor .card { background-color: #1f2329 !important; }
+</style>
+
+
+<link rel="stylesheet" href="https://npm.onmicrosoft.cn/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+
+<div id="app-wifi-monitor" v-cloak>
+    <div class="wm-header mb-3">
+        <div class="wm-toolbar">
+            <h2 class="wm-title">AP &#x63A5;&#x5165;&#x7BA1;&#x7406;
+                <span class="wm-count">已连接 {{ clients.length }}</span>
+            </h2>
+            <div class="wm-actions">
+                <button @click="openRouterModal" class="btn btn-secondary btn-sm">&#x8DEF;&#x7531;&#x5668;&#x7BA1;&#x7406;</button>
+                <button @click="openBanList" class="btn btn-secondary btn-sm">&#x5DF2;&#x7981;&#x7528;&#x8BBE;&#x5907;</button>
+                <span @click="clearLocalCache" class="wm-link">&#x6E05;&#x7A7A;&#x7F13;&#x5B58;</span>
+                <button @click="fetchData" class="btn btn-primary btn-sm">&#x5237;&#x65B0;&#x6570;&#x636E;</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <table class="table">
+            <colgroup>
+                <col class="col-info">
+                <col class="col-ip">
+                <col class="col-band">
+                <col class="col-sig">
+                <col class="col-rate">
+            </colgroup>
+            <thead>
+                <tr>
+                    <th class="col-info" @click="handleSort('name')">设备信息</th>
+                    <th class="col-ip" @click="handleSort('ip')">IP 地址</th>
+                    <th class="col-band">频段/协议</th>
+                    <th class="col-sig" @click="handleSort('rssi')">信号</th>
+                    <th class="col-rate" @click="handleSort('rate')">速率</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="c in sortedClients" :key="c.mac" class="wm-row-clickable" :class="{ 'wm-row-banned': isBlacklistedAny(c.mac) }" @click="openAction(c)">
+                    <td class="col-info-cell">
+                        <div style="display: flex; align-items: center;">
+                            <div class="v-icon-box" :style="{ borderColor: getBrandMeta(c).bgColor + '30' }">
+                                <img v-if="getBrandMeta(c).logo" :src="getBrandMeta(c).logo" @error="handleImgError">
+                                <i v-else :class="getBrandMeta(c).icon" :style="{ color: getBrandMeta(c).bgColor }"></i>
+                            </div>
+                            <div class="device-text">
+                                <div class="device-name-row">
+                                    <span class="device-name">{{ displayName(c.name) }}</span>
+                                    <span v-if="getBanLabel(c.mac)" class="custom-badge wm-ban-badge">{{ getBanLabel(c.mac) }}</span>
+                                </div>
+                                <div v-if="getBrandMeta(c).tags && getBrandMeta(c).tags.length" class="tag-row">
+                                    <span v-for="(t, idx) in getBrandMeta(c).tags" :key="t.kind + '-' + t.label + '-' + idx" class="custom-badge" :class="t.kind === 'brand' ? 'brand-tag' : 'type-tag'" :style="t.kind === 'brand' ? { backgroundColor: getBrandMeta(c).bgColor } : {}">
+                                        {{ t.label }}
+                                    </span>
+                                </div>
+                                <div class="device-sub">
+                                    <span class="device-mac">{{ c.mac }}</span>
+                                </div>
+                                <div class="vendor-detail" v-if="c.vendor">
+                                    {{ displayVendor(c.vendor) }}
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <div v-if="isMobile" style="display: flex; flex-direction: column; line-height: 1.15;">
+                            <span class="ip-text">{{ getIpParts(c.ip).prefix }}</span>
+                            <span class="ip-text">{{ getIpParts(c.ip).suffix }}</span>
+                        </div>
+                        <span v-else class="ip-text">{{ c.ip }}</span>
+                    </td>
+                    <td class="col-band-cell">
+                        <div class="d-flex flex-column gap-1">
+                            <span class="custom-badge text-center" :class="c.band === '5GHz' ? 'bg-5g' : 'bg-24g'">{{ c.band }}</span>
+                            <span v-if="c.phy === 'ax'" class="custom-badge bg-wifi6 text-center">Wi-Fi 6</span>
+                            <span v-else-if="c.phy === 'ac'" class="custom-badge bg-wifi5 text-center">Wi-Fi 5</span>
+                        </div>
+                    </td>
+                    <td>
+                        <div :class="getSignalClass(c.rssi)" class="rssi-val" style="font-weight: bold;">
+                            <i class="bi" :class="getSignalIcon(c.rssi)"></i>
+                            <span>{{ c.rssi }}<small>dBm</small></span>
+                        </div>
+                    </td>
+                    <td>
+                        <div style="white-space: nowrap;">
+                            <span class="rate-val">{{ c.rate }}</span><small class="rate-unit">Mbps</small>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div v-if="actionModal.show" class="wm-modal-backdrop" @click.self="closeAction">
+        <div class="wm-modal">
+            <div class="wm-modal-header">
+                <div class="wm-modal-title">&#x8DEF;&#x7531;&#x5668;&#x7BA1;&#x7406;</div>
+                <button class="wm-modal-close" @click="closeAction">&times;</button>
+            </div>
+            <div class="wm-modal-body">
+                <div class="wm-device-brief">
+                    <div class="wm-device-name">{{ activeClient.name || '未知设备' }}</div>
+                    <div class="wm-device-meta">{{ activeClient.mac || '-' }}</div>
+                    <div class="wm-device-meta">IP: {{ activeClient.ip || '-' }} · 当前: {{ activeClient.band || '-' }}</div>
+                </div>
+                <div class="wm-status-row">
+                    <span class="wm-status-pill" :class="isMacInBand(activeClient.mac, 'wl0') ? 'wm-status-on' : 'wm-status-off'">5G {{ isMacInBand(activeClient.mac, 'wl0') ? '已禁用' : '未禁用' }}</span>
+                    <span class="wm-status-pill" :class="isMacInBand(activeClient.mac, 'wl1') ? 'wm-status-on' : 'wm-status-off'">2.4G {{ isMacInBand(activeClient.mac, 'wl1') ? '已禁用' : '未禁用' }}</span>
+                </div>
+                <div class="wm-band-options">
+                    <label class="wm-band-option">
+                        <input type="radio" value="wl0" v-model="actionModal.band">仅 5G
+                    </label>
+                    <label class="wm-band-option">
+                        <input type="radio" value="wl1" v-model="actionModal.band">仅 2.4G
+                    </label>
+                    <label class="wm-band-option">
+                        <input type="radio" value="both" v-model="actionModal.band">双频同时
+                    </label>
+                </div>
+                <div class="wm-error" v-if="actionModal.error">{{ actionModal.error }}</div>
+            </div>
+            <div class="wm-modal-footer">
+                <button class="wm-btn wm-btn-ghost" :disabled="actionModal.loading" @click="applyAcl('unban')">解黑</button>
+                <button class="wm-btn wm-btn-danger" :disabled="actionModal.loading" @click="applyAcl('ban')">拉黑</button>            </div>
+        </div>
+    </div>
+
+    <div v-if="banList.show" class="wm-modal-backdrop" @click.self="closeBanList">
+        <div class="wm-modal wm-modal-wide">
+            <div class="wm-modal-header">
+                <div class="wm-modal-title">已禁用设备</div>
+                <button class="wm-modal-close" @click="closeBanList">&times;</button>
+            </div>
+            <div class="wm-modal-body">
+                <div v-if="bannedEntries.length === 0" class="wm-banlist-empty">当前无已禁用设备</div>
+                <div v-else>
+                    <table class="wm-banlist-table">
+                        <thead>
+                            <tr>
+                                <th>设备</th>
+                                <th>MAC</th>
+                                <th>IP</th>
+                                <th>频段</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="b in bannedEntries" :key="b.mac">
+                                <td>{{ b.name }}</td>
+                                <td class="device-mac">{{ b.mac }}</td>
+                                <td class="ip-text">{{ b.ip || '-' }}</td>
+                                <td><span class="wm-band-chip">{{ b.bandLabel }}</span></td>
+                                <td>
+                                    <div class="d-flex gap-1">
+                                        <button v-if="b.wl0" class="wm-btn wm-btn-ghost" :disabled="banList.loading" @click="unbanFromList(b.mac, 'wl0')">解黑5G</button>
+                                        <button v-if="b.wl1" class="wm-btn wm-btn-ghost" :disabled="banList.loading" @click="unbanFromList(b.mac, 'wl1')">解黑2.4G</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="wm-banlist-cards">
+                        <div class="wm-ban-card" v-for="b in bannedEntries" :key="b.mac">
+                            <div class="title">{{ b.name }}</div>
+                            <div class="meta">{{ b.mac }}</div>
+                            <div class="meta">IP: {{ b.ip || '-' }}</div>
+                            <div class="row">
+                                <span class="wm-band-chip">{{ b.bandLabel }}</span>
+                                <div class="actions">
+                                    <button v-if="b.wl0" class="wm-btn wm-btn-ghost" :disabled="banList.loading" @click="unbanFromList(b.mac, 'wl0')">解黑5G</button>
+                                    <button v-if="b.wl1" class="wm-btn wm-btn-ghost" :disabled="banList.loading" @click="unbanFromList(b.mac, 'wl1')">解黑2.4G</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="wm-error" v-if="banList.error">{{ banList.error }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div v-if="routerModal.show" class="wm-modal-backdrop" @click.self="closeRouterModal">
+        <div class="wm-modal wm-modal-wide">
+            <div class="wm-modal-header">
+                <div class="wm-modal-title">&#x8DEF;&#x7531;&#x5668;&#x7BA1;&#x7406;</div>
+                <button class="wm-modal-close" @click="closeRouterModal">&times;</button>
+            </div>
+            <div class="wm-modal-body">
+                <div class="wm-router-grid">
+                    <div class="wm-router-card">
+                        <div class="wm-router-head">
+                            <div class="wm-router-title">5G (wl0)</div>
+                            <div class="wm-router-sub">{{ displayValue(routerBand('wl0').ssid) }}</div>
+                        </div>
+                        <div class="wm-router-kv">
+                            <span class="wm-kv-label">BSSID</span>
+                            <span class="wm-kv-value">{{ displayValue(routerBand('wl0').bssid) }}</span>
+                        </div>
+                        <div class="wm-router-kv">
+                            <span class="wm-kv-label">信道</span>
+                            <span class="wm-kv-value">{{ formatChannel(routerBand('wl0')) }}</span>
+                        </div>
+                        <div class="wm-router-kv">
+                            <span class="wm-kv-label">DFS</span>
+                            <span class="wm-kv-value">{{ formatDfs(routerBand('wl0').dfs) }}</span>
+                        </div>
+                        <div class="wm-router-kv">
+                            <span class="wm-kv-label">带宽</span>
+                            <span class="wm-kv-value">{{ formatBw(routerBand('wl0').bw) }}</span>
+                        </div>
+                        <div class="wm-router-kv">
+                            <span class="wm-kv-label">自动信道</span>
+                            <span class="wm-kv-value">{{ formatAutoch(routerBand('wl0').autoch) }}</span>
+                        </div>
+                        <div class="wm-router-kv">
+                            <span class="wm-kv-label">国家</span>
+                            <span class="wm-kv-value">{{ displayValue(routerBand('wl0').country) }}</span>
+                        </div>
+                        <div class="wm-router-kv">
+                            <span class="wm-kv-label">功率模式</span>
+                            <span class="wm-kv-value">{{ formatTxpwr(routerBand('wl0').txpwr) }}</span>
+                        </div>
+                        <div class="wm-router-kv">
+                            <span class="wm-kv-label">接口禁用</span>
+                            <span class="wm-kv-value"><span :class="statusByDisabled(routerBand('wl0').iface_disabled)">{{ formatDisabled(routerBand('wl0').iface_disabled) }}</span></span>
+                        </div>
+                        <div class="wm-router-kv">
+                            <span class="wm-kv-label">设备禁用</span>
+                            <span class="wm-kv-value"><span :class="statusByDisabled(routerBand('wl0').device_disabled)">{{ formatDisabled(routerBand('wl0').device_disabled) }}</span></span>
+                        </div>
+                        <div class="wm-router-kv">
+                            <span class="wm-kv-label">速率</span>
+                            <span class="wm-kv-value">{{ formatRate(routerBand('wl0').bit_rate_mbps) }}</span>
+                        </div>
+                        <div class="wm-router-kv">
+                            <span class="wm-kv-label">功率</span>
+                            <span class="wm-kv-value">{{ formatDbm(routerBand('wl0').tx_power_dbm) }}</span>
+                        </div>
+                        <div class="wm-router-kv">
+                            <span class="wm-kv-label">信号/噪声</span>
+                            <span class="wm-kv-value">{{ formatSignal(routerBand('wl0')) }}</span>
+                        </div>
+                        <div class="wm-router-kv">
+                            <span class="wm-kv-label">模式</span>
+                            <span class="wm-kv-value">{{ displayValue(routerBand('wl0').mode) }}</span>
+                        </div>
+                    </div>
+                    <div class="wm-router-card">
+                        <div class="wm-router-head">
+                            <div class="wm-router-title">2.4G (wl1)</div>
+                            <div class="wm-router-sub">{{ displayValue(routerBand('wl1').ssid) }}</div>
+                        </div>
+                        <div class="wm-router-kv">
+                            <span class="wm-kv-label">BSSID</span>
+                            <span class="wm-kv-value">{{ displayValue(routerBand('wl1').bssid) }}</span>
+                        </div>
+                        <div class="wm-router-kv">
+                            <span class="wm-kv-label">信道</span>
+                            <span class="wm-kv-value">{{ formatChannel(routerBand('wl1')) }}</span>
+                        </div>
+                        <div class="wm-router-kv">
+                            <span class="wm-kv-label">DFS</span>
+                            <span class="wm-kv-value">{{ formatDfs(routerBand('wl1').dfs) }}</span>
+                        </div>
+                        <div class="wm-router-kv">
+                            <span class="wm-kv-label">带宽</span>
+                            <span class="wm-kv-value">{{ formatBw(routerBand('wl1').bw) }}</span>
+                        </div>
+                        <div class="wm-router-kv">
+                            <span class="wm-kv-label">自动信道</span>
+                            <span class="wm-kv-value">{{ formatAutoch(routerBand('wl1').autoch) }}</span>
+                        </div>
+                        <div class="wm-router-kv">
+                            <span class="wm-kv-label">国家</span>
+                            <span class="wm-kv-value">{{ displayValue(routerBand('wl1').country) }}</span>
+                        </div>
+                        <div class="wm-router-kv">
+                            <span class="wm-kv-label">功率模式</span>
+                            <span class="wm-kv-value">{{ formatTxpwr(routerBand('wl1').txpwr) }}</span>
+                        </div>
+                        <div class="wm-router-kv">
+                            <span class="wm-kv-label">接口禁用</span>
+                            <span class="wm-kv-value"><span :class="statusByDisabled(routerBand('wl1').iface_disabled)">{{ formatDisabled(routerBand('wl1').iface_disabled) }}</span></span>
+                        </div>
+                        <div class="wm-router-kv">
+                            <span class="wm-kv-label">设备禁用</span>
+                            <span class="wm-kv-value"><span :class="statusByDisabled(routerBand('wl1').device_disabled)">{{ formatDisabled(routerBand('wl1').device_disabled) }}</span></span>
+                        </div>
+                        <div class="wm-router-kv">
+                            <span class="wm-kv-label">速率</span>
+                            <span class="wm-kv-value">{{ formatRate(routerBand('wl1').bit_rate_mbps) }}</span>
+                        </div>
+                        <div class="wm-router-kv">
+                            <span class="wm-kv-label">功率</span>
+                            <span class="wm-kv-value">{{ formatDbm(routerBand('wl1').tx_power_dbm) }}</span>
+                        </div>
+                        <div class="wm-router-kv">
+                            <span class="wm-kv-label">信号/噪声</span>
+                            <span class="wm-kv-value">{{ formatSignal(routerBand('wl1')) }}</span>
+                        </div>
+                        <div class="wm-router-kv">
+                            <span class="wm-kv-label">模式</span>
+                            <span class="wm-kv-value">{{ displayValue(routerBand('wl1').mode) }}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="wm-router-card wm-section-card">
+                    <div class="wm-section-head" data-section="settings">
+                        <div class="wm-section-title">设置</div>
+                        <div class="wm-section-actions">
+                            <button class="wm-btn wm-btn-ghost" @click.stop="confirmResetSettings">恢复默认</button></div>
+                    </div>
+                    <div class="wm-section-body">
+                        <div class="wm-router-settings">
+                            <div class="wm-setting-card">
+                                <div class="wm-setting-head">
+                                    <div class="wm-setting-title">5G 主SSID</div>
+                                    <div style="display:flex; flex-direction:column; gap:6px;">
+                                        <div class="wm-setting-row">
+                                            <span class="wm-setting-label">主SSID</span>
+                                            <label class="wm-switch">
+                                                <input type="checkbox" v-model="routerSettings.wl0.enabled" @change="markRouterDirty">
+                                                <span class="wm-slider"></span>
+                                            </label>
+                                        </div>
+                                        <div class="wm-setting-row">
+                                            <span class="wm-setting-label">射频</span>
+                                            <label class="wm-switch">
+                                                <input type="checkbox" v-model="routerSettings.wl0.radioEnabled" @change="markRouterDirty">
+                                                <span class="wm-slider"></span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="wm-setting-label">SSID</div>
+                                    <input class="wm-input" v-model="routerSettings.wl0.ssid" @input="markRouterDirty" placeholder="SSID">
+                                </div>
+                                <div class="wm-setting-row">
+                                    <span class="wm-setting-label">隐藏网络</span>
+                                    <label class="wm-switch">
+                                        <input type="checkbox" v-model="routerSettings.wl0.hidden" @change="markRouterDirty">
+                                        <span class="wm-slider"></span>
+                                    </label>
+                                </div>
+                                <div>
+                                    <div class="wm-setting-label">加密方式</div>
+                                    <select class="wm-input" v-model="routerSettings.wl0.encryption" @change="handleEncryptionChange('wl0')">
+                                        <option v-for="opt in encryptionOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <div class="wm-setting-label">密码</div>
+                                    <input v-if="routerSettings.wl0.encryption !== 'none'" class="wm-input" type="password" v-model="routerSettings.wl0.key" @input="markRouterDirty" placeholder="留空不改">
+                                    <div v-else class="wm-setting-note">当前为无加密，密码无需填写</div>
+                                </div>
+                                <div>
+                                    <div class="wm-setting-label">无线信道</div>
+                                    <select class="wm-input" v-model="routerSettings.wl0.channel" @change="markRouterDirty">
+                                        <option v-for="opt in channelOptions.wl0" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <div class="wm-setting-label">频段带宽</div>
+                                    <select class="wm-input" v-model="routerSettings.wl0.bw" @change="markRouterDirty">
+                                        <option v-for="opt in bwOptions.wl0" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <div class="wm-setting-label">信号强度</div>
+                                    <select class="wm-input" v-model="routerSettings.wl0.txpwr" @change="markRouterDirty">
+                                        <option v-for="opt in txpwrOptions" :key="opt.value" :value="opt.value">{{ txpwrLabel(opt, 'wl0') }}</option>
+                                    </select>
+                                </div>
+                                <div class="wm-setting-note">当前功率：{{ formatDbm(routerBand('wl0').tx_power_dbm) }}</div>
+                                <div class="wm-setting-note">仅修改主 SSID</div>
+                                <div class="wm-setting-actions">
+                                    <button class="wm-btn wm-btn-ghost" :disabled="routerSettings.wl0.saving" @click="resetRouterSettings('wl0')">重置</button>
+                                    <button class="wm-btn wm-btn-primary" :disabled="routerSettings.wl0.saving" @click="applyRouterSettings('wl0')">保存</button>
+                                </div>
+                                <div class="wm-setting-note" v-if="routerSettings.wl0.msg">{{ routerSettings.wl0.msg }}</div>
+                            </div>
+                            <div class="wm-setting-card">
+                                <div class="wm-setting-head">
+                                    <div class="wm-setting-title">2.4G 主SSID</div>
+                                    <div style="display:flex; flex-direction:column; gap:6px;">
+                                        <div class="wm-setting-row">
+                                            <span class="wm-setting-label">主SSID</span>
+                                            <label class="wm-switch">
+                                                <input type="checkbox" v-model="routerSettings.wl1.enabled" @change="markRouterDirty">
+                                                <span class="wm-slider"></span>
+                                            </label>
+                                        </div>
+                                        <div class="wm-setting-row">
+                                            <span class="wm-setting-label">射频</span>
+                                            <label class="wm-switch">
+                                                <input type="checkbox" v-model="routerSettings.wl1.radioEnabled" @change="markRouterDirty">
+                                                <span class="wm-slider"></span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="wm-setting-label">SSID</div>
+                                    <input class="wm-input" v-model="routerSettings.wl1.ssid" @input="markRouterDirty" placeholder="SSID">
+                                </div>
+                                <div class="wm-setting-row">
+                                    <span class="wm-setting-label">隐藏网络</span>
+                                    <label class="wm-switch">
+                                        <input type="checkbox" v-model="routerSettings.wl1.hidden" @change="markRouterDirty">
+                                        <span class="wm-slider"></span>
+                                    </label>
+                                </div>
+                                <div>
+                                    <div class="wm-setting-label">加密方式</div>
+                                    <select class="wm-input" v-model="routerSettings.wl1.encryption" @change="handleEncryptionChange('wl1')">
+                                        <option v-for="opt in encryptionOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <div class="wm-setting-label">密码</div>
+                                    <input v-if="routerSettings.wl1.encryption !== 'none'" class="wm-input" type="password" v-model="routerSettings.wl1.key" @input="markRouterDirty" placeholder="留空不改">
+                                    <div v-else class="wm-setting-note">当前为无加密，密码无需填写</div>
+                                </div>
+                                <div>
+                                    <div class="wm-setting-label">无线信道</div>
+                                    <select class="wm-input" v-model="routerSettings.wl1.channel" @change="markRouterDirty">
+                                        <option v-for="opt in channelOptions.wl1" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <div class="wm-setting-label">频段带宽</div>
+                                    <select class="wm-input" v-model="routerSettings.wl1.bw" @change="markRouterDirty">
+                                        <option v-for="opt in bwOptions.wl1" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <div class="wm-setting-label">信号强度</div>
+                                    <select class="wm-input" v-model="routerSettings.wl1.txpwr" @change="markRouterDirty">
+                                        <option v-for="opt in txpwrOptions" :key="opt.value" :value="opt.value">{{ txpwrLabel(opt, 'wl1') }}</option>
+                                    </select>
+                                </div>
+                                <div class="wm-setting-note">当前功率：{{ formatDbm(routerBand('wl1').tx_power_dbm) }}</div>
+                                <div class="wm-setting-note">仅修改主 SSID</div>
+                                <div class="wm-setting-actions">
+                                    <button class="wm-btn wm-btn-ghost" :disabled="routerSettings.wl1.saving" @click="resetRouterSettings('wl1')">重置</button>
+                                    <button class="wm-btn wm-btn-primary" :disabled="routerSettings.wl1.saving" @click="applyRouterSettings('wl1')">保存</button>
+                                </div>
+                                <div class="wm-setting-note" v-if="routerSettings.wl1.msg">{{ routerSettings.wl1.msg }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="wm-router-card wm-section-card">
+                    <div class="wm-section-head" data-section="advanced">
+                        <div class="wm-section-title">高级功能</div></div>
+                    <div class="wm-section-body">
+                        <div class="wm-router-settings">
+                            <div class="wm-setting-card">
+                                <div class="wm-setting-head">
+                                    <div class="wm-setting-title">无线特性</div>
+                                </div>
+                                <div class="wm-setting-row">
+                                    <span class="wm-setting-label">双频合一 (BSD)</span>
+                                    <label class="wm-switch">
+                                        <input type="checkbox" v-model="advancedSettings.bsd" @change="markAdvancedDirty">
+                                        <span class="wm-slider"></span>
+                                    </label>
+                                </div>
+                                <div class="wm-setting-row">
+                                    <span class="wm-setting-label">Wi-Fi 6 (802.11ax)</span>
+                                    <label class="wm-switch">
+                                        <input type="checkbox" v-model="advancedSettings.ax" @change="markAdvancedDirty">
+                                        <span class="wm-slider"></span>
+                                    </label>
+                                </div>
+                                <div class="wm-setting-row">
+                                    <span class="wm-setting-label">MU-MIMO</span>
+                                    <label class="wm-switch">
+                                        <input type="checkbox" v-model="advancedSettings.txbf" @change="markAdvancedDirty">
+                                        <span class="wm-slider"></span>
+                                    </label>
+                                </div>
+                                <div class="wm-setting-row">
+                                    <span class="wm-setting-label">DFS (仅5G)</span>
+                                    <label class="wm-switch">
+                                        <input type="checkbox" v-model="advancedSettings.dfs" @change="markAdvancedDirty">
+                                        <span class="wm-slider"></span>
+                                    </label>
+                                </div>
+                                <div>
+                                    <div class="wm-setting-label">国家码</div>
+                                    <input class="wm-input" v-model="advancedSettings.country" @input="handleCountryInput" maxlength="2" placeholder="如 CN / US">
+                                </div>
+                                <div class="wm-setting-note">关闭 Wi-Fi 6 可提升老设备兼容性；DFS 仅对 5G 生效。</div>
+                            </div>
+                            <div class="wm-setting-card">
+                                <div class="wm-setting-head">
+                                    <div class="wm-setting-title">Mesh 组网</div>
+                                </div>
+                                <div class="wm-setting-row">
+                                    <span class="wm-setting-label">Mesh 自动组网</span>
+                                    <label class="wm-switch">
+                                        <input type="checkbox" v-model="advancedSettings.mesh" :disabled="!advancedSettings.meshSupport" @change="markAdvancedDirty">
+                                        <span class="wm-slider"></span>
+                                    </label>
+                                </div>
+                                <div class="wm-setting-note">Mesh 状态：<span :class="meshStateClass(advancedSettings.meshState)">{{ formatMeshState(advancedSettings.meshState) }}</span></div>
+                                <div class="wm-setting-note">Mesh 版本：{{ advancedSettings.meshVersion || '-' }}</div>
+                                <div class="wm-setting-note">Mesh 模式：{{ routerMesh.netmode || '-' }}</div>
+                                <div class="wm-setting-note">Mesh 角色：{{ routerMesh.role || '-' }}</div>
+                                <div class="wm-setting-note">CAP 模式：{{ routerMesh.cap_mode || '-' }}</div>
+                                <div class="wm-setting-note">EasyMesh 支持：<span :class="procStateClass(routerMesh.easymesh)">{{ routerMesh.easymesh ? '是' : '否' }}</span></div>
+                                <div class="wm-setting-note">mapd：<span :class="procStateClass(routerMesh.proc_mapd)">{{ formatProcState(routerMesh.proc_mapd) }}</span>，topomon：<span :class="procStateClass(routerMesh.proc_topomon)">{{ formatProcState(routerMesh.proc_topomon) }}</span></div>
+                                <div class="wm-setting-note" v-if="!advancedSettings.meshSupport">当前设备未提供 Mesh 开关</div>
+                            </div>
+                        </div>
+                                <div class="wm-setting-actions">
+                            <button class="wm-btn wm-btn-primary" :disabled="advancedSettings.saving" @click="applyAdvancedSettings">保存高级设置</button>
+                        </div>
+                        <div class="wm-setting-note" v-if="advancedSettings.msg">{{ advancedSettings.msg }}</div>
+                    </div>
+                </div>
+                <div class="wm-router-card wm-section-card">
+                    <div class="wm-section-head" data-section="extras">
+                        <div class="wm-section-title">&#x8BBF;&#x5BA2; Wi-Fi / &#x6269;&#x5C55; SSID</div></div>
+                    <div class="wm-section-body">
+                        <div v-if="guestSettings.length === 0" class="wm-inline-row">
+                            <span class="wm-inline-label">&#x8BBF;&#x5BA2; Wi-Fi锛?/span>
+                            <span class="wm-inline-text">&#x672A;&#x68C0;&#x6D4B;&#x5230;&#x8BBF;&#x5BA2; Wi-Fi</span>
+                        </div>
+                        <div v-else>
+                            <div class="wm-section-title">&#x8BBF;&#x5BA2; Wi-Fi</div>
+                            <div class="wm-router-settings">
+                            <div class="wm-setting-card" v-for="g in guestSettings" :key="g.section">
+                                <div class="wm-setting-head">
+                                    <div class="wm-setting-title">{{ displayBandLabel(g.band) }} 访客 Wi-Fi</div>
+                                    <div class="wm-setting-row">
+                                        <span class="wm-setting-label">开关</span>
+                                        <label class="wm-switch">
+                                            <input type="checkbox" v-model="g.enabled" @change="markExtrasDirty">
+                                            <span class="wm-slider"></span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="wm-setting-label">SSID</div>
+                                    <input class="wm-input" v-model="g.ssid" @input="markExtrasDirty" placeholder="SSID">
+                                </div>
+                                <div class="wm-setting-row">
+                                    <span class="wm-setting-label">隐藏网络</span>
+                                    <label class="wm-switch">
+                                        <input type="checkbox" v-model="g.hidden" @change="markExtrasDirty">
+                                        <span class="wm-slider"></span>
+                                    </label>
+                                </div>
+                                <div>
+                                    <div class="wm-setting-label">加密方式</div>
+                                    <select class="wm-input" v-model="g.encryption" @change="handleExtraEncryptionChange(g)">
+                                        <option v-for="opt in encryptionOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <div class="wm-setting-label">密码</div>
+                                    <input v-if="g.encryption !== 'none'" class="wm-input" type="password" v-model="g.key" @input="markExtrasDirty" placeholder="留空不改">
+                                    <div v-else class="wm-setting-note">当前为无加密，密码无需填写</div>
+                                </div>
+                                <div class="wm-setting-actions">
+                                    <button class="wm-btn wm-btn-primary" :disabled="g.saving" @click="applyExtraSettings(g, findExtraBase(g.section, 'guest'))">保存</button>
+                                </div>
+                                <div class="wm-setting-note" v-if="g.msg">{{ g.msg }}</div>
+                            </div>
+                        </div>
+                        </div>
+                        <div v-if="wifi5Settings.length === 0" class="wm-inline-row">
+                            <span class="wm-inline-label">Wi-Fi 5 &#x517C;&#x5BB9; SSID (Wi-Fi 6 &#x517C;&#x5BB9;&#x6A21;&#x5F0F;)：</span>
+                            <span class="wm-inline-text">&#x672A;&#x68C0;&#x6D4B;&#x5230;&#x517C;&#x5BB9;&#x6A21;&#x5F0F; SSID</span>
+                        </div>
+                        <div v-else>
+                            <div class="wm-section-title">Wi-Fi 5 &#x517C;&#x5BB9; SSID (Wi-Fi 6 &#x517C;&#x5BB9;&#x6A21;&#x5F0F;)</div>
+                            <div class="wm-router-settings">
+                            <div class="wm-setting-card" v-for="g in wifi5Settings" :key="g.section">
+                                <div class="wm-setting-head">
+                                    <div class="wm-setting-title">{{ displayBandLabel(g.band) }} Wi-Fi 5 SSID</div>
+                                    <div class="wm-setting-row">
+                                        <span class="wm-setting-label">开关</span>
+                                        <label class="wm-switch">
+                                            <input type="checkbox" v-model="g.enabled" @change="markExtrasDirty">
+                                            <span class="wm-slider"></span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="wm-setting-label">SSID</div>
+                                    <input class="wm-input" v-model="g.ssid" @input="markExtrasDirty" placeholder="SSID">
+                                </div>
+                                <div class="wm-setting-row">
+                                    <span class="wm-setting-label">隐藏网络</span>
+                                    <label class="wm-switch">
+                                        <input type="checkbox" v-model="g.hidden" @change="markExtrasDirty">
+                                        <span class="wm-slider"></span>
+                                    </label>
+                                </div>
+                                <div>
+                                    <div class="wm-setting-label">加密方式</div>
+                                    <select class="wm-input" v-model="g.encryption" @change="handleExtraEncryptionChange(g)">
+                                        <option v-for="opt in encryptionOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <div class="wm-setting-label">密码</div>
+                                    <input v-if="g.encryption !== 'none'" class="wm-input" type="password" v-model="g.key" @input="markExtrasDirty" placeholder="留空不改">
+                                    <div v-else class="wm-setting-note">当前为无加密，密码无需填写</div>
+                                </div>
+                                <div class="wm-setting-actions">
+                                    <button class="wm-btn wm-btn-primary" :disabled="g.saving" @click="applyExtraSettings(g, findExtraBase(g.section, 'wifi5'))">保存</button>
+                                </div>
+                                <div class="wm-setting-note" v-if="g.msg">{{ g.msg }}</div>
+                            </div>
+                        </div>
+                        </div>
+                        <div class="wm-section-title">自定义 SSID</div>
+                        <div class="wm-setting-note">提示：若硬件不支持多 SSID（VAP），新增的 SSID 可能无法广播。</div>
+                        <div class="wm-router-settings">
+                            <div class="wm-setting-card">
+                                <div class="wm-setting-head">
+                                    <div class="wm-setting-title">新增 SSID</div>
+                                </div>
+                                <div>
+                                    <div class="wm-setting-label">频段</div>
+                                    <select class="wm-input" v-model="newCustom.band">
+                                        <option value="wl0">5G</option>
+                                        <option value="wl1">2.4G</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <div class="wm-setting-label">SSID</div>
+                                    <input class="wm-input" v-model="newCustom.ssid" placeholder="SSID">
+                                </div>
+                                <div class="wm-setting-row">
+                                    <span class="wm-setting-label">隐藏网络</span>
+                                    <label class="wm-switch">
+                                        <input type="checkbox" v-model="newCustom.hidden">
+                                        <span class="wm-slider"></span>
+                                    </label>
+                                </div>
+                                <div>
+                                    <div class="wm-setting-label">加密方式</div>
+                                    <select class="wm-input" v-model="newCustom.encryption" @change="handleNewCustomEncryptionChange">
+                                        <option v-for="opt in encryptionOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <div class="wm-setting-label">密码</div>
+                                    <input v-if="newCustom.encryption !== 'none'" class="wm-input" type="password" v-model="newCustom.key" placeholder="至少 8 位">
+                                    <div v-else class="wm-setting-note">当前为无加密，密码无需填写</div>
+                                </div>
+                                <div>
+                                    <div class="wm-setting-label">vifidx (>=7)</div>
+                                    <input class="wm-input" v-model="newCustom.vifidx" placeholder="7">
+                                    <div class="wm-setting-note">留空自动选择空闲索引，冲突会提示当前占用列表</div>
+                                </div>
+                                <div class="wm-setting-row">
+                                    <span class="wm-setting-label">客户端隔离 (NoForwarding)</span>
+                                    <label class="wm-switch">
+                                        <input type="checkbox" v-model="newCustom.noforwarding">
+                                        <span class="wm-slider"></span>
+                                    </label>
+                                </div>
+                                <div class="wm-setting-note">开启后同一 SSID 终端不能互访</div>
+                                <div>
+                                    <div class="wm-setting-label">WPS 设备名</div>
+                                    <input class="wm-input" v-model="newCustom.wpsdevicename" placeholder="XIAOMI_ROUTER_GUEST">
+                                    <div class="wm-setting-note">用于 WPS 标识访客接口</div>
+                                </div>
+                                <div>
+                                    <div class="wm-setting-label">最大连接数 (MbssMaxStaNum)</div>
+                                    <input class="wm-input" v-model="newCustom.mbssmaxstanum" placeholder="64">
+                                    <div class="wm-setting-note">限制该 SSID 最大同时连接数</div>
+                                </div>
+                                <div class="wm-setting-row">
+                                    <span class="wm-setting-label">WMM</span>
+                                    <label class="wm-switch">
+                                        <input type="checkbox" v-model="newCustom.wmm">
+                                        <span class="wm-slider"></span>
+                                    </label>
+                                </div>
+                                <div class="wm-setting-note">建议开启，保证 Wi-Fi 速率与兼容</div>
+                                <div class="wm-setting-row">
+                                    <span class="wm-setting-label">IGMP Snooping</span>
+                                    <label class="wm-switch">
+                                        <input type="checkbox" v-model="newCustom.igmpsnenable">
+                                        <span class="wm-slider"></span>
+                                    </label>
+                                </div>
+                                <div class="wm-setting-note">减少组播广播，优化 IPTV/智能设备</div>
+                                <div class="wm-setting-row">
+                                    <span class="wm-setting-label">802.11k (RRM)</span>
+                                    <label class="wm-switch">
+                                        <input type="checkbox" v-model="newCustom.rrm">
+                                        <span class="wm-slider"></span>
+                                    </label>
+                                </div>
+                                <div class="wm-setting-note">加快漫游扫描</div>
+                                <div class="wm-setting-row">
+                                    <span class="wm-setting-label">802.11v (WNM)</span>
+                                    <label class="wm-switch">
+                                        <input type="checkbox" v-model="newCustom.wnm">
+                                        <span class="wm-slider"></span>
+                                    </label>
+                                </div>
+                                <div class="wm-setting-note">漫游管理与负载引导</div>
+                                <div class="wm-setting-row">
+                                    <span class="wm-setting-label">Band Steering (BSD)</span>
+                                    <label class="wm-switch">
+                                        <input type="checkbox" v-model="newCustom.bsd">
+                                        <span class="wm-slider"></span>
+                                    </label>
+                                </div>
+                                <div class="wm-setting-note">双频引导，提升体验</div>
+                                <div class="wm-setting-row">
+                                    <span class="wm-setting-label">EasyMesh (map)</span>
+                                    <label class="wm-switch">
+                                        <input type="checkbox" v-model="newCustom.map">
+                                        <span class="wm-slider"></span>
+                                    </label>
+                                </div>
+                                <div class="wm-setting-note">开启 Mesh 组网能力</div>
+                                <div>
+                                    <div class="wm-setting-label">MapBSSType</div>
+                                    <input class="wm-input" v-model="newCustom.mapbsstype" placeholder="32">
+                                    <div class="wm-setting-note">32=Fronthaul, 64=Backhaul</div>
+                                </div>
+                                <div>
+                                    <div class="wm-setting-label">MAC 过滤</div>
+                                    <select class="wm-input" v-model="newCustom.macfilter">
+                                        <option v-for="opt in macfilterOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+                                    </select>
+                                    <div class="wm-setting-note">关闭/白名单/黑名单</div>
+                                </div>
+                                <div class="wm-setting-actions">
+                                    <button class="wm-btn wm-btn-primary" :disabled="newCustom.creating" @click="createCustomSsid">创建</button>
+                                </div>
+                                <div class="wm-setting-note" v-if="newCustom.msg">{{ newCustom.msg }}</div>
+                            </div>
+                        <div class="wm-section-title">MI_IP / API_KEY</div>
+                        <div class="wm-router-settings">
+                            <div class="wm-setting-card">
+                                <div class="wm-setting-head">
+                                    <div class="wm-setting-title">Remote Config</div>
+                                </div>
+                                <div>
+                                    <div class="wm-setting-label">MI_IP</div>
+                                    <input class="wm-input" v-model="monitorConfig.mi_ip" placeholder="192.168.10.10">
+                                </div>
+                                <div>
+                                    <div class="wm-setting-label">API_KEY</div>
+                                    <div class="wm-input-row">
+                                        <input class="wm-input" :type="monitorConfig.showKey ? 'text' : 'password'" v-model="monitorConfig.api_key" placeholder="MAC Lookup API Key">
+                                        <button class="wm-btn wm-btn-ghost wm-btn-toggle" type="button" @click="monitorConfig.showKey = !monitorConfig.showKey" :title="monitorConfig.showKey ? '隐藏' : '显示'">
+                                            <i :class="monitorConfig.showKey ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
+                                        </button>
+                                    </div>
+                                    <div class="wm-setting-note">Empty = Vendor lookup disabled.</div>
+                                </div>
+                                <div class="wm-setting-actions">
+                                    <button class="wm-btn wm-btn-primary" :disabled="monitorConfig.saving" @click="saveMonitorConfig">Save</button>
+                                </div>
+                                <div class="wm-setting-note" v-if="monitorConfig.msg">{{ monitorConfig.msg }}</div>
+                            </div>
+                        </div>
+
+                        <div v-if="customSettings.length === 0" class="wm-setting-note">暂无自定义 SSID</div>
+                        <div v-else class="wm-router-settings">
+                            <div class="wm-setting-card" v-for="g in customSettings" :key="g.section">
+                                <div class="wm-setting-head">
+                                    <div class="wm-setting-title">{{ displayBandLabel(g.band) }} 自定义 SSID</div>
+                                    <div class="wm-setting-note">vifidx: {{ g.vifidx || '-' }}</div>
+                                    <div class="wm-setting-row">
+                                        <span class="wm-setting-label">开关</span>
+                                        <label class="wm-switch">
+                                            <input type="checkbox" v-model="g.enabled" @change="markExtrasDirty">
+                                            <span class="wm-slider"></span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="wm-setting-label">SSID</div>
+                                    <input class="wm-input" v-model="g.ssid" @input="markExtrasDirty" placeholder="SSID">
+                                </div>
+                                <div class="wm-setting-row">
+                                    <span class="wm-setting-label">隐藏网络</span>
+                                    <label class="wm-switch">
+                                        <input type="checkbox" v-model="g.hidden" @change="markExtrasDirty">
+                                        <span class="wm-slider"></span>
+                                    </label>
+                                </div>
+                                <div>
+                                    <div class="wm-setting-label">加密方式</div>
+                                    <select class="wm-input" v-model="g.encryption" @change="handleExtraEncryptionChange(g)">
+                                        <option v-for="opt in encryptionOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <div class="wm-setting-label">密码</div>
+                                    <input v-if="g.encryption !== 'none'" class="wm-input" type="password" v-model="g.key" @input="markExtrasDirty" placeholder="留空不改">
+                                    <div v-else class="wm-setting-note">当前为无加密，密码无需填写</div>
+                                    </div>
+                                                                <div class="wm-setting-row">
+                                    <span class="wm-setting-label">客户端隔离 (NoForwarding)</span>
+                                    <label class="wm-switch">
+                                        <input type="checkbox" v-model="g.noforwarding" @change="markExtrasDirty">
+                                        <span class="wm-slider"></span>
+                                    </label>
+                                </div>
+                                <div class="wm-setting-note">开启后同一 SSID 终端不能互访</div>
+                                <div>
+                                    <div class="wm-setting-label">WPS 设备名</div>
+                                    <input class="wm-input" v-model="g.wpsdevicename" @input="markExtrasDirty" placeholder="XIAOMI_ROUTER_GUEST">
+                                    <div class="wm-setting-note">用于 WPS 标识访客接口</div>
+                                </div>
+                                <div>
+                                    <div class="wm-setting-label">最大连接数 (MbssMaxStaNum)</div>
+                                    <input class="wm-input" v-model="g.mbssmaxstanum" @input="markExtrasDirty" placeholder="64">
+                                    <div class="wm-setting-note">限制该 SSID 最大同时连接数</div>
+                                </div>
+                                <div class="wm-setting-row">
+                                    <span class="wm-setting-label">WMM</span>
+                                    <label class="wm-switch">
+                                        <input type="checkbox" v-model="g.wmm" @change="markExtrasDirty">
+                                        <span class="wm-slider"></span>
+                                    </label>
+                                </div>
+                                <div class="wm-setting-note">建议开启，保证 Wi-Fi 速率与兼容</div>
+                                <div class="wm-setting-row">
+                                    <span class="wm-setting-label">IGMP Snooping</span>
+                                    <label class="wm-switch">
+                                        <input type="checkbox" v-model="g.igmpsnenable" @change="markExtrasDirty">
+                                        <span class="wm-slider"></span>
+                                    </label>
+                                </div>
+                                <div class="wm-setting-note">减少组播广播，优化 IPTV/智能设备</div>
+                                <div class="wm-setting-row">
+                                    <span class="wm-setting-label">802.11k (RRM)</span>
+                                    <label class="wm-switch">
+                                        <input type="checkbox" v-model="g.rrm" @change="markExtrasDirty">
+                                        <span class="wm-slider"></span>
+                                    </label>
+                                </div>
+                                <div class="wm-setting-note">加快漫游扫描</div>
+                                <div class="wm-setting-row">
+                                    <span class="wm-setting-label">802.11v (WNM)</span>
+                                    <label class="wm-switch">
+                                        <input type="checkbox" v-model="g.wnm" @change="markExtrasDirty">
+                                        <span class="wm-slider"></span>
+                                    </label>
+                                </div>
+                                <div class="wm-setting-note">漫游管理与负载引导</div>
+                                <div class="wm-setting-row">
+                                    <span class="wm-setting-label">Band Steering (BSD)</span>
+                                    <label class="wm-switch">
+                                        <input type="checkbox" v-model="g.bsd" @change="markExtrasDirty">
+                                        <span class="wm-slider"></span>
+                                    </label>
+                                </div>
+                                <div class="wm-setting-note">双频引导，提升体验</div>
+                                <div class="wm-setting-row">
+                                    <span class="wm-setting-label">EasyMesh (map)</span>
+                                    <label class="wm-switch">
+                                        <input type="checkbox" v-model="g.map" @change="markExtrasDirty">
+                                        <span class="wm-slider"></span>
+                                    </label>
+                                </div>
+                                <div class="wm-setting-note">开启 Mesh 组网能力</div>
+                                <div>
+                                    <div class="wm-setting-label">MapBSSType</div>
+                                    <input class="wm-input" v-model="g.mapbsstype" @input="markExtrasDirty" placeholder="32">
+                                    <div class="wm-setting-note">32=Fronthaul, 64=Backhaul</div>
+                                </div>
+                                <div>
+                                    <div class="wm-setting-label">MAC 过滤</div>
+                                    <select class="wm-input" v-model="g.macfilter" @change="markExtrasDirty">
+                                        <option v-for="opt in macfilterOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+                                    </select>
+                                    <div class="wm-setting-note">关闭/白名单/黑名单</div>
+                                </div>
+                                <div class="wm-setting-actions">
+                                    <button class="wm-btn wm-btn-primary" :disabled="g.saving" @click="applyExtraSettings(g, findExtraBase(g.section, 'custom'))">保存</button>
+                                    <button class="wm-btn wm-btn-ghost" :disabled="g.saving" @click="deleteCustomSsid(g)">删除</button>
+                                </div>
+                                <div class="wm-setting-note" v-if="g.msg">{{ g.msg }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="wm-error" v-if="routerModal.error">{{ routerModal.error }}</div>
+            </div>
+            <div class="wm-modal-footer">
+                <button class="wm-btn wm-btn-ghost" :disabled="routerModal.loading" @click="fetchRouterStatus">&#x5237;&#x65B0;&#x72B6;&#x6001;</button>
+                <button class="wm-btn wm-btn-primary" :disabled="routerModal.loading" @click="restartWifi">重启WIFI</button>
+                <button class="wm-btn wm-btn-danger" :disabled="routerModal.loading" @click="rebootRouter">重启路由器</button>
+            </div>
+        </div>
+    </div>
+
+    <div v-if="confirmModal.show" class="wm-modal-backdrop" @click.self="closeConfirm">
+        <div class="wm-modal">
+            <div class="wm-modal-header">
+                <div class="wm-modal-title">{{ confirmModal.title }}</div>
+                <button class="wm-modal-close" @click="closeConfirm">&times;</button>
+            </div>
+            <div class="wm-modal-body">
+                <div class="wm-setting-note" v-if="confirmModal.message">{{ confirmModal.message }}</div>
+                <div v-if="confirmModal.changes.length === 0 && !confirmModal.allowEmpty" class="wm-setting-note">没有检测到需要修改的内容</div>
+                                <ul v-else class="wm-confirm-list">
+                                    <li v-for="(c, idx) in confirmModal.changes" :key="idx">
+                                        <span class="wm-confirm-label">{{ c.label }}</span>
+                                        <span class="wm-confirm-value">{{ c.from }} → {{ c.to }}</span>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="wm-modal-footer">
+                                <button class="wm-btn wm-btn-ghost" :disabled="confirmModal.loading" @click="closeConfirm">取消</button>
+                                <button class="wm-btn wm-btn-primary" :disabled="confirmModal.loading || (!confirmModal.allowEmpty && confirmModal.changes.length === 0)" @click="confirmApply">确认应用</button>
+            </div>
+        </div>
+    </div>
+
+    <div v-if="saveStatus.show" class="wm-saving-backdrop">
+        <div class="wm-saving-panel">
+            <div v-if="saveStatus.state === 'loading'" class="wm-saving-spinner"></div>
+            <div class="wm-saving-text">{{ saveStatus.message }}</div>
+        </div>
+    </div>
+</div>
+
+<script src="https://npm.onmicrosoft.cn/vue@3.2.47/dist/vue.global.prod.js"></script>
+
+<script>
+const { createApp } = Vue;
+const ACL_API = '/cgi-bin/luci/admin/status/wifi_acl';
+const ROUTER_API = '/cgi-bin/luci/admin/status/wifi_router';
+const ROUTER_API_FALLBACK = '/cgi-bin/api_wifi_router';
+const ROUTER_SET_API = '/cgi-bin/luci/admin/status/wifi_router_set';
+const CONFIG_API = '/cgi-bin/luci/admin/status/wifi_monitor_config';
+const WIFI_RESTART_API = '/cgi-bin/luci/admin/status/wifi_restart';
+const ROUTER_REBOOT_API = '/cgi-bin/luci/admin/status/router_reboot';
+
+createApp({
+    data() {
+        return {
+            clients: [],
+            loading: false,
+            sort: { key: 'rssi', order: 2 }, 
+            cacheKey: 'mac_vendors_v6',
+            vendorCache: {},
+            isMobile: false,
+            mobileNameLimit: 15,
+            mobileVendorLimit: 20,
+            acl: { wl0: [], wl1: [] },
+            aclLastFetch: 0,
+            routerModal: {
+                show: false,
+                loading: false,
+                error: '',
+                data: { wl0: {}, wl1: {} }
+            },
+            saveStatus: {
+                show: false,
+                state: 'idle',
+                message: '',
+                timer: null,
+                hideTimer: null
+            },
+            routerMesh: { enabled: false, support: false, version: '', state: 0, netmode: '', role: '', cap_mode: '', proc_mapd: false, proc_topomon: false, easymesh: false },
+            routerSettingsDirty: false,
+            routerSettings: {
+                wl0: { enabled: true, radioEnabled: true, ssid: '', key: '', hidden: false, encryption: 'psk2', channel: '0', bw: '0', txpwr: 'max', saving: false, msg: '' },
+                wl1: { enabled: true, radioEnabled: true, ssid: '', key: '', hidden: false, encryption: 'psk2', channel: '0', bw: '0', txpwr: 'max', saving: false, msg: '' }
+            },
+            routerExtras: { guest: [], wifi5: [], custom: [] },
+            extrasDirty: false,
+            monitorConfig: { mi_ip: '', api_key: '', saving: false, msg: '', showKey: false },
+            guestSettings: [],
+            wifi5Settings: [],
+            customSettings: [],
+            newCustom: { band: 'wl0', ssid: '', encryption: 'psk2', key: '', hidden: false, vifidx: '', noforwarding: false, wpsdevicename: 'XIAOMI_ROUTER_GUEST', mbssmaxstanum: '64', wmm: true, igmpsnenable: true, rrm: true, wnm: true, bsd: true, map: false, mapbsstype: '32', macfilter: 'disabled', creating: false, msg: '' },
+            advancedDirty: false,
+            advancedSettings: { bsd: false, ax: true, txbf: true, dfs: false, country: '', mesh: false, meshSupport: false, meshVersion: '', meshState: 0, meshNetmode: '', meshRole: '', saving: false, msg: '' },
+            channelOptions: {
+                wl1: [
+                    { value: '0', label: '自动' },
+                    { value: '1', label: '1' },
+                    { value: '2', label: '2' },
+                    { value: '3', label: '3' },
+                    { value: '4', label: '4' },
+                    { value: '5', label: '5' },
+                    { value: '6', label: '6' },
+                    { value: '7', label: '7' },
+                    { value: '8', label: '8' },
+                    { value: '9', label: '9' },
+                    { value: '10', label: '10' },
+                    { value: '11', label: '11' },
+                    { value: '12', label: '12' },
+                    { value: '13', label: '13' }
+                ],
+                wl0: [
+                    { value: '0', label: '自动' },
+                    { value: '36', label: '36' },
+                    { value: '40', label: '40' },
+                    { value: '44', label: '44' },
+                    { value: '48', label: '48' },
+                    { value: '52', label: '52' },
+                    { value: '56', label: '56' },
+                    { value: '60', label: '60' },
+                    { value: '64', label: '64' },
+                    { value: '149', label: '149' },
+                    { value: '153', label: '153' },
+                    { value: '157', label: '157' },
+                    { value: '161', label: '161' },
+                    { value: '165', label: '165' }
+                ]
+            },
+            bwOptions: {
+                wl1: [
+                    { value: '0', label: '40/20MHz' },
+                    { value: '20', label: '20MHz' },
+                    { value: '40', label: '40MHz' }
+                ],
+                wl0: [
+                    { value: '0', label: '160/80/40/20MHz' },
+                    { value: '20', label: '20MHz' },
+                    { value: '40', label: '40MHz' },
+                    { value: '80', label: '80MHz' }
+                ]
+            },
+            txpwrOptions: [
+                { value: 'max', label: '穿墙' },
+                { value: 'mid', label: '标准' },
+                { value: 'min', label: '节能' }
+            ],
+            txpwrDbmMap: {
+                wl0: { max: '23', mid: '22', min: '20' },
+                wl1: { max: '23', mid: '22', min: '20' }
+            },
+            encryptionOptions: [
+                { value: 'psk2', label: '强加密(WPA2个人版)' },
+                { value: 'psk2+ccmp', label: '强混合加密(WPA3/WPA2个人版)' },
+                { value: 'ccmp', label: '超强加密(WPA3个人版)' },
+                { value: 'mixed-psk', label: '混合加密(WPA/WPA2个人版)' },
+                { value: 'none', label: '无加密(允许所有人连接)' }
+            ],
+            macfilterOptions: [
+                { value: 'disabled', label: '关闭' },
+                { value: 'allow', label: '白名单' },
+                { value: 'deny', label: '黑名单' }
+            ],
+            confirmModal: {
+                show: false,
+                title: '确认修改',
+                changes: [],
+                message: '',
+                loading: false,
+                allowEmpty: false
+            },
+            confirmAction: null,
+            actionModal: {
+                show: false,
+                client: null,
+                band: 'both',
+                loading: false,
+                error: ''
+            },
+            banList: {
+                show: false,
+                loading: false,
+                error: ''
+            }
+        }
+    },
+    computed: {
+        sortedClients() {
+            if (this.sort.order === 0) return [...this.clients];
+            return [...this.clients].sort((a, b) => {
+                let v1 = a[this.sort.key];
+                let v2 = b[this.sort.key];
+                if (this.sort.key === 'ip') {
+                    v1 = (v1 === '-') ? '999.999.999.999' : v1;
+                    v2 = (v2 === '-') ? '999.999.999.999' : v2;
+                    v1 = v1.split('.').map(n => n.padStart(3, '0')).join('');
+                    v2 = v2.split('.').map(n => n.padStart(3, '0')).join('');
+                }
+                if (['rssi', 'rate'].includes(this.sort.key)) {
+                    v1 = parseFloat(v1) || 0; v2 = parseFloat(v2) || 0;
+                }
+                if (v1 < v2) return this.sort.order === 1 ? -1 : 1;
+                if (v1 > v2) return this.sort.order === 1 ? 1 : -1;
+                return 0;
+            });
+        },
+        activeClient() {
+            return this.actionModal.client || {};
+        },
+        bannedEntries() {
+            const map = {};
+            const add = (entry, band) => {
+                if (!entry) return;
+                const mac = (typeof entry === 'string') ? entry : entry.mac;
+                if (!mac) return;
+                const m = this.normalizeMac(mac);
+                if (!map[m]) map[m] = { mac: m, wl0: false, wl1: false };
+                map[m][band] = true;
+                if (entry && typeof entry === 'object') {
+                    if (entry.name && !map[m].name) map[m].name = entry.name;
+                    if (entry.ip && !map[m].ip) map[m].ip = entry.ip;
+                }
+            };
+            (this.acl.wl0 || []).forEach(e => add(e, 'wl0'));
+            (this.acl.wl1 || []).forEach(e => add(e, 'wl1'));
+            return Object.values(map).map(item => {
+                const c = this.findClientByMac(item.mac);
+                const name = item.name || (c ? c.name : '未知设备');
+                const ip = item.ip || (c ? c.ip : '-');
+                return {
+                    ...item,
+                    name,
+                    ip,
+                    bandLabel: (item.wl0 && item.wl1) ? '2.4/5G' : (item.wl0 ? '5G' : '2.4G')
+                };
+            }).sort((a, b) => a.mac.localeCompare(b.mac));
+        }
+    },
+    methods: {
+        updateIsMobile() {
+            this.isMobile = window.matchMedia('(max-width: 768px)').matches;
+        },
+        getIpParts(ip) {
+            if (!ip) return { prefix: '', suffix: '' };
+            const i = ip.lastIndexOf('.');
+            if (i === -1) return { prefix: ip, suffix: '' };
+            return {
+                prefix: ip.substring(0, i),
+                suffix: ip.substring(i)
+            };
+        },
+        truncate(text, maxLen) {
+            if (!text) return "";
+            const str = String(text);
+            return str.length > maxLen ? str.slice(0, Math.max(0, maxLen - 3)) + '...' : str;
+        },
+        displayName(name) {
+            return this.isMobile ? this.truncate(name, this.mobileNameLimit) : (name || "");
+        },
+        displayVendor(vendor) {
+            return this.isMobile ? this.truncate(vendor, this.mobileVendorLimit) : (vendor || "");
+        },
+        normalizeMac(mac) {
+            return (mac || '').toUpperCase();
+        },
+        isMacInBand(mac, band) {
+            const m = this.normalizeMac(mac);
+            if (!m || !this.acl || !this.acl[band]) return false;
+            return this.acl[band].some(entry => this.normalizeMac(entry.mac) === m);
+        },
+        isBlacklistedAny(mac) {
+            return this.isMacInBand(mac, 'wl0') || this.isMacInBand(mac, 'wl1');
+        },
+        getBanLabel(mac) {
+            const is5 = this.isMacInBand(mac, 'wl0');
+            const is24 = this.isMacInBand(mac, 'wl1');
+            if (is5 && is24) return '2.4/5G已禁用';
+            if (is5) return '5G已禁用';
+            if (is24) return '2.4G已禁用';
+            return '';
+        },
+        defaultBandFor(client) {
+            if (!client || !client.band) return 'both';
+            return client.band === '5GHz' ? 'wl0' : (client.band === '2.4GHz' ? 'wl1' : 'both');
+        },
+        openAction(client) {
+            this.actionModal = {
+                show: true,
+                client,
+                band: this.defaultBandFor(client),
+                loading: false,
+                error: ''
+            };
+        },
+        closeAction() {
+            this.actionModal.show = false;
+        },
+        openBanList() {
+            this.banList.show = true;
+            this.banList.error = '';
+            this.fetchAclList();
+        },
+        closeBanList() {
+            this.banList.show = false;
+        },
+        openRouterModal() {
+            this.routerModal.show = true;
+            this.routerModal.error = '';
+            this.routerSettingsDirty = false;
+            this.routerSettings.wl0.msg = '';
+            this.routerSettings.wl1.msg = '';
+            this.advancedDirty = false;
+            this.extrasDirty = false;
+            this.advancedSettings.msg = '';
+            this.newCustom.msg = '';
+            this.fetchRouterStatus();
+        },
+        closeRouterModal() {
+            this.routerModal.show = false;
+        },
+        async restartWifi() {
+            this.openConfirm(
+                [],
+                '确认重启 Wi-Fi？设备可能会短暂断开连接。',
+                async () => {
+                    this.startSaveStatus('正在重启 Wi-Fi，请稍候...');
+                    let ok = false;
+                    try {
+                        const res = await fetch(WIFI_RESTART_API, { method: 'POST' });
+                        const data = await res.json();
+                        if (!data || data.ok !== true) {
+                            throw new Error((data && data.error) ? data.error : '操作失败');
+                        }
+                        ok = true;
+                        setTimeout(() => this.fetchRouterStatus(), 1500);
+                    } catch (e) {
+                        this.routerModal.error = (e && e.message) ? e.message : '操作失败';
+                    } finally {
+                        this.finishSaveStatus(ok);
+                    }
+                },
+                true
+            );
+        },
+        async rebootRouter() {
+            this.openConfirm(
+                [],
+                '确认重启路由器？重启期间将断网，请耐心等待。',
+                async () => {
+                    this.startSaveStatus('正在重启路由器，请稍候...');
+                    let ok = false;
+                    try {
+                        const res = await fetch(ROUTER_REBOOT_API, { method: 'POST' });
+                        const data = await res.json();
+                        if (!data || data.ok !== true) {
+                            throw new Error((data && data.error) ? data.error : '操作失败');
+                        }
+                        ok = true;
+                    } catch (e) {
+                        this.routerModal.error = (e && e.message) ? e.message : '操作失败';
+                    } finally {
+                        this.finishSaveStatus(ok);
+                    }
+                },
+                true
+            );
+        },
+        startSaveStatus(message) {
+            const defaultMsg = '正在应用设置，请稍候...';
+            this.saveStatus.show = true;
+            this.saveStatus.state = 'loading';
+            this.saveStatus.message = message || defaultMsg;
+            if (this.saveStatus.timer) {
+                clearTimeout(this.saveStatus.timer);
+            }
+            if (this.saveStatus.hideTimer) {
+                clearTimeout(this.saveStatus.hideTimer);
+            }
+            this.saveStatus.timer = setTimeout(() => {
+                if (this.saveStatus.state === 'loading') {
+                    this.saveStatus.state = 'timeout';
+                    this.saveStatus.message = '操作超时，请稍后再试';
+                    if (this.saveStatus.hideTimer) {
+                        clearTimeout(this.saveStatus.hideTimer);
+                    }
+                    this.saveStatus.hideTimer = setTimeout(() => {
+                        this.saveStatus.show = false;
+                    }, 1800);
+                }
+            }, 20000);
+        },
+        finishSaveStatus(success) {
+            this.saveStatus.show = true;
+            if (this.saveStatus.timer) {
+                clearTimeout(this.saveStatus.timer);
+                this.saveStatus.timer = null;
+            }
+            if (success === true) {
+                this.saveStatus.state = 'success';
+                this.saveStatus.message = '操作成功';
+            } else if (success === false) {
+                this.saveStatus.state = 'error';
+                this.saveStatus.message = '操作失败';
+            }
+            if (this.saveStatus.hideTimer) {
+                clearTimeout(this.saveStatus.hideTimer);
+            }
+            this.saveStatus.hideTimer = setTimeout(() => {
+                this.saveStatus.show = false;
+            }, 1800);
+        },
+        markRouterDirty() {
+            this.routerSettingsDirty = true;
+        },
+        handleEncryptionChange(band) {
+            this.markRouterDirty();
+            if (band && this.routerSettings[band] && this.routerSettings[band].encryption === 'none') {
+                this.routerSettings[band].key = '';
+            }
+        },
+        handleExtraEncryptionChange(item) {
+            this.markExtrasDirty();
+            if (item && item.encryption === 'none') {
+                item.key = '';
+            }
+        },
+        handleNewCustomEncryptionChange() {
+            if (this.newCustom.encryption === 'none') {
+                this.newCustom.key = '';
+            }
+        },
+        syncRouterSettings() {
+            const wl0 = this.routerBand('wl0');
+            const wl1 = this.routerBand('wl1');
+            const isDisabled = (val) => (val === true || String(val) === '1');
+            const isHidden = (val) => (val === true || String(val) === '1');
+            this.routerSettings.wl0.enabled = !isDisabled(wl0.iface_disabled);
+            this.routerSettings.wl0.radioEnabled = !isDisabled(wl0.device_disabled);
+            this.routerSettings.wl0.ssid = wl0.ssid || '';
+            this.routerSettings.wl0.key = '';
+            this.routerSettings.wl0.hidden = isHidden(wl0.hidden);
+            this.routerSettings.wl0.encryption = wl0.encryption || 'psk2';
+            this.routerSettings.wl0.channel = (wl0.channel !== undefined && wl0.channel !== null) ? String(wl0.channel) : '0';
+            this.routerSettings.wl0.bw = (wl0.bw !== undefined && wl0.bw !== null) ? String(wl0.bw) : '0';
+            this.routerSettings.wl0.txpwr = wl0.txpwr || 'max';
+            this.routerSettings.wl0.msg = '';
+            this.routerSettings.wl1.enabled = !isDisabled(wl1.iface_disabled);
+            this.routerSettings.wl1.radioEnabled = !isDisabled(wl1.device_disabled);
+            this.routerSettings.wl1.ssid = wl1.ssid || '';
+            this.routerSettings.wl1.key = '';
+            this.routerSettings.wl1.hidden = isHidden(wl1.hidden);
+            this.routerSettings.wl1.encryption = wl1.encryption || 'psk2';
+            this.routerSettings.wl1.channel = (wl1.channel !== undefined && wl1.channel !== null) ? String(wl1.channel) : '0';
+            this.routerSettings.wl1.bw = (wl1.bw !== undefined && wl1.bw !== null) ? String(wl1.bw) : '0';
+            this.routerSettings.wl1.txpwr = wl1.txpwr || 'max';
+            this.routerSettings.wl1.msg = '';
+            this.routerSettingsDirty = false;
+        },
+        resetRouterSettings(band) {
+            if (!band || !this.routerSettings[band]) return;
+            const data = this.routerBand(band);
+            const isDisabled = (val) => (val === true || String(val) === '1');
+            const isHidden = (val) => (val === true || String(val) === '1');
+            this.routerSettings[band].enabled = !isDisabled(data.iface_disabled);
+            this.routerSettings[band].radioEnabled = !isDisabled(data.device_disabled);
+            this.routerSettings[band].ssid = data.ssid || '';
+            this.routerSettings[band].key = '';
+            this.routerSettings[band].hidden = isHidden(data.hidden);
+            this.routerSettings[band].encryption = data.encryption || 'psk2';
+            this.routerSettings[band].channel = (data.channel !== undefined && data.channel !== null) ? String(data.channel) : '0';
+            this.routerSettings[band].bw = (data.bw !== undefined && data.bw !== null) ? String(data.bw) : '0';
+            this.routerSettings[band].txpwr = data.txpwr || 'max';
+            this.routerSettings[band].msg = '';
+            this.routerSettingsDirty = false;
+        },
+        markAdvancedDirty() {
+            this.advancedDirty = true;
+            this.advancedSettings.msg = '';
+        },
+        markExtrasDirty() {
+            this.extrasDirty = true;
+        },
+        handleCountryInput() {
+            const val = (this.advancedSettings.country || '').toUpperCase().replace(/[^A-Z]/g, '');
+            this.advancedSettings.country = val.slice(0, 2);
+            this.markAdvancedDirty();
+        },
+        syncAdvancedSettings() {
+            const wl0 = this.routerBand('wl0');
+            const wl1 = this.routerBand('wl1');
+            const isOn = (val) => (val === true || String(val) === '1' || String(val) === '3');
+            this.advancedSettings.bsd = isOn(wl0.bsd) || isOn(wl1.bsd);
+            this.advancedSettings.ax = isOn(wl0.ax) && isOn(wl1.ax);
+            this.advancedSettings.txbf = isOn(wl0.txbf) || isOn(wl1.txbf);
+            this.advancedSettings.dfs = (wl0.dfs === true);
+            const country = wl0.country || wl1.country || '';
+            this.advancedSettings.country = country ? String(country).toUpperCase() : '';
+            const mesh = (this.routerMesh || {});
+            const meshEnabled = (mesh.enabled === true || String(mesh.enabled) === '1');
+            const meshSupport = (mesh.support === true || String(mesh.support) === '1' || mesh.easymesh === true || String(mesh.easymesh) === '1');
+            this.advancedSettings.mesh = meshEnabled;
+            this.advancedSettings.meshSupport = meshSupport;
+            this.advancedSettings.meshVersion = mesh.version || '';
+            this.advancedSettings.meshState = (mesh.state !== undefined && mesh.state !== null) ? Number(mesh.state) : 0;
+            this.advancedSettings.meshNetmode = mesh.netmode || '';
+            this.advancedSettings.meshRole = mesh.role || '';
+            this.advancedSettings.msg = '';
+            this.advancedDirty = false;
+        },
+                syncExtraSettings(mergeOnly = false) {
+            const toBool = (val, def) => {
+                if (val === true || String(val) === '1') return true;
+                if (val === false || String(val) === '0') return false;
+                return def;
+            };
+            const toStr = (val, def) => {
+                if (val === undefined || val === null || String(val) === '') return def;
+                return String(val);
+            };
+            const toItem = (e, group) => ({
+                section: e.section,
+                band: e.band || '',
+                ssid: e.ssid || '',
+                enabled: !(e.disabled === true || String(e.disabled) === '1'),
+                hidden: (e.hidden === true || String(e.hidden) === '1'),
+                encryption: e.encryption || 'psk2',
+                vifidx: (e.vifidx !== undefined && e.vifidx !== null) ? e.vifidx : "",
+                noforwarding: toBool(e.noforwarding, false),
+                wpsdevicename: toStr(e.wpsdevicename, 'XIAOMI_ROUTER_GUEST'),
+                mbssmaxstanum: toStr(e.mbssmaxstanum, '64'),
+                wmm: toBool(e.wmm, true),
+                igmpsnenable: toBool(e.igmpsnenable, true),
+                rrm: toBool(e.rrm, true),
+                wnm: toBool(e.wnm, true),
+                bsd: toBool(e.bsd, true),
+                map: toBool(e.map, false),
+                mapbsstype: toStr(e.mapbsstype, '32'),
+                macfilter: toStr(e.macfilter, 'disabled'),
+                group,
+                key: '',
+                saving: false,
+                msg: ''
+            });
+            const mergeList = (serverList, localList, group) => {
+                const list = Array.isArray(localList) ? [...localList] : [];
+                const seen = new Set(list.map(i => i.section));
+                for (const e of (serverList || [])) {
+                    if (!seen.has(e.section)) {
+                        list.push(toItem(e, group));
+                    }
+                }
+                return list;
+            };
+            if (mergeOnly) {
+                this.guestSettings = mergeList(this.routerExtras.guest, this.guestSettings, 'guest');
+                this.wifi5Settings = mergeList(this.routerExtras.wifi5, this.wifi5Settings, 'wifi5');
+                this.customSettings = mergeList(this.routerExtras.custom, this.customSettings, 'custom');
+                return;
+            }
+            this.guestSettings = (this.routerExtras.guest || []).map(e => toItem(e, 'guest'));
+            this.wifi5Settings = (this.routerExtras.wifi5 || []).map(e => toItem(e, 'wifi5'));
+            this.customSettings = (this.routerExtras.custom || []).map(e => toItem(e, 'custom'));
+            this.extrasDirty = false;
+        },
+        async fetchMonitorConfig() {
+            try {
+                const res = await fetch(CONFIG_API);
+                const data = await res.json();
+                if (data && data.ok) {
+                    this.monitorConfig.mi_ip = data.mi_ip || '';
+                    this.monitorConfig.api_key = data.api_key || '';
+                    this.monitorConfig.msg = '';
+                }
+            } catch (e) {
+                this.monitorConfig.msg = 'Failed to load config';
+            }
+        },
+        async saveMonitorConfig() {
+            const cfg = this.monitorConfig;
+            cfg.msg = '';
+            cfg.saving = true;
+            try {
+                const params = new URLSearchParams();
+                params.set('save', '1');
+                params.set('mi_ip', cfg.mi_ip || '');
+                params.set('api_key', cfg.api_key || '');
+                const res = await fetch(CONFIG_API, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: params
+                });
+                const data = await res.json();
+                if (!data || data.ok !== true) {
+                    throw new Error((data && data.error) ? data.error : 'Save failed');
+                }
+                cfg.msg = 'Saved';
+            } catch (e) {
+                cfg.msg = (e && e.message) ? e.message : 'Save failed';
+            } finally {
+                cfg.saving = false;
+            }
+        },
+        getOptionLabel(options, value) {
+            const v = (value === undefined || value === null) ? '' : String(value);
+            const opt = (options || []).find(o => String(o.value) === v);
+            return opt ? opt.label : (v || '-');
+        },
+        txpwrLabel(opt, band) {
+            if (!opt) return '';
+            const map = (this.txpwrDbmMap && this.txpwrDbmMap[band]) ? this.txpwrDbmMap[band] : {};
+            const dbm = map ? map[opt.value] : '';
+            if (dbm !== undefined && dbm !== null && dbm !== '') {
+                return `${opt.label} (${dbm} dBm)`;
+            }
+            return opt.label;
+        },
+        getTxpwrOptionLabel(value, band) {
+            const v = (value === undefined || value === null) ? '' : String(value);
+            const opt = (this.txpwrOptions || []).find(o => String(o.value) === v);
+            if (!opt) return v || '-';
+            return this.txpwrLabel(opt, band);
+        },
+        displayBandLabel(band) {
+            const b = (band || '').toString().toUpperCase();
+            if (b === '5G' || b === '5GHZ') return '5G';
+            if (b === '2G' || b === '2.4G' || b === '2.4GHZ' || b === '2GHZ') return '2.4G';
+            return band || '未知频段';
+        },
+        formatOnOff(val) {
+            return val ? '开启' : '关闭';
+        },
+        formatHiddenText(val) {
+            return val ? '隐藏' : '可见';
+        },
+        formatMeshState(state) {
+            const s = Number(state);
+            if (s === 0) return '已关闭';
+            if (s === 1) return '已开启';
+            if (s === 2) return '已组网';
+            if (s === 3) return '组网中';
+            return '未知';
+        },
+        formatProcState(val) {
+            if (val === true) return '运行中';
+            if (val === false) return '未运行';
+            return '未知';
+        },
+        statusByDisabled(val) {
+            return (val === true || String(val) === '1') ? 'wm-status-bad' : 'wm-status-good';
+        },
+        meshStateClass(state) {
+            const s = Number(state);
+            if (s === 0) return 'wm-status-bad';
+            if (s === 1 || s === 2) return 'wm-status-good';
+            if (s === 3) return 'wm-status-warn';
+            return 'wm-status-neutral';
+        },
+        procStateClass(val) {
+            if (val === true || String(val) === '1') return 'wm-status-good';
+            if (val === false || String(val) === '0') return 'wm-status-bad';
+            return 'wm-status-neutral';
+        },
+        buildRouterChanges(band) {
+            const cfg = this.routerSettings[band];
+            const cur = this.routerBand(band);
+            const isDisabled = (val) => (val === true || String(val) === '1');
+            const isHidden = (val) => (val === true || String(val) === '1');
+            const changes = [];
+
+            const curEnabled = !isDisabled(cur.iface_disabled);
+            const curRadio = !isDisabled(cur.device_disabled);
+            const curHidden = isHidden(cur.hidden);
+            const curEnc = cur.encryption || 'psk2';
+            const curChannel = (cur.channel !== undefined && cur.channel !== null) ? String(cur.channel) : '0';
+            const curBw = (cur.bw !== undefined && cur.bw !== null) ? String(cur.bw) : '0';
+            const curTxpwr = cur.txpwr || 'max';
+
+            if (curEnabled !== cfg.enabled) {
+                changes.push({ label: '主SSID开关', from: this.formatOnOff(curEnabled), to: this.formatOnOff(cfg.enabled) });
+            }
+            if (curRadio !== cfg.radioEnabled) {
+                changes.push({ label: '射频开关', from: this.formatOnOff(curRadio), to: this.formatOnOff(cfg.radioEnabled) });
+            }
+            if (cfg.ssid && cfg.ssid !== cur.ssid) {
+                changes.push({ label: 'SSID', from: cur.ssid || '-', to: cfg.ssid });
+            }
+            if (curHidden !== cfg.hidden) {
+                changes.push({ label: '隐藏网络', from: this.formatHiddenText(curHidden), to: this.formatHiddenText(cfg.hidden) });
+            }
+            if (cfg.encryption !== curEnc) {
+                changes.push({
+                    label: '加密方式',
+                    from: this.getOptionLabel(this.encryptionOptions, curEnc),
+                    to: this.getOptionLabel(this.encryptionOptions, cfg.encryption)
+                });
+            }
+            if (cfg.key) {
+                changes.push({ label: '密码', from: '******', to: '已修改' });
+            }
+            if (cfg.channel !== curChannel) {
+                changes.push({
+                    label: '信道',
+                    from: this.getOptionLabel(this.channelOptions[band], curChannel),
+                    to: this.getOptionLabel(this.channelOptions[band], cfg.channel)
+                });
+            }
+            if (cfg.bw !== curBw) {
+                changes.push({
+                    label: '带宽',
+                    from: this.getOptionLabel(this.bwOptions[band], curBw),
+                    to: this.getOptionLabel(this.bwOptions[band], cfg.bw)
+                });
+            }
+            if (cfg.txpwr !== curTxpwr) {
+                changes.push({
+                    label: '信号强度',
+                    from: this.getTxpwrOptionLabel(curTxpwr, band),
+                    to: this.getTxpwrOptionLabel(cfg.txpwr, band)
+                });
+            }
+            return changes;
+        },
+        openConfirm(changes, message, onConfirm, allowEmpty = false) {
+            this.confirmModal.show = true;
+            this.confirmModal.changes = changes || [];
+            this.confirmModal.message = message || '';
+            this.confirmModal.loading = false;
+            this.confirmModal.allowEmpty = !!allowEmpty;
+            this.confirmAction = onConfirm || null;
+        },
+        closeConfirm() {
+            this.confirmModal.show = false;
+            this.confirmModal.loading = false;
+            this.confirmAction = null;
+        },
+        async confirmApply() {
+            if (!this.confirmAction) return;
+            this.confirmModal.loading = true;
+            try {
+                await this.confirmAction();
+            } finally {
+                this.confirmModal.loading = false;
+                this.closeConfirm();
+            }
+        },
+        confirmResetSettings() {
+            this.openConfirm([], '将恢复为路由器当前配置（未保存的修改会丢失）', async () => {
+                this.syncRouterSettings();
+            }, true);
+        },
+        buildAdvancedChanges() {
+            const wl0 = this.routerBand('wl0');
+            const wl1 = this.routerBand('wl1');
+            const isOn = (val) => (val === true || String(val) === '1' || String(val) === '3');
+            const changes = [];
+            const bsdCur = isOn(wl0.bsd) || isOn(wl1.bsd);
+            const axCur = isOn(wl0.ax) && isOn(wl1.ax);
+            const txbfCur = isOn(wl0.txbf) || isOn(wl1.txbf);
+            const dfsCur = (wl0.dfs === true);
+            const countryCur = wl0.country || wl1.country || '';
+            const meshCur = (this.routerMesh && (this.routerMesh.enabled === true || String(this.routerMesh.enabled) === '1'));
+
+            if (bsdCur !== this.advancedSettings.bsd) {
+                changes.push({ label: '双频合一', from: this.formatOnOff(bsdCur), to: this.formatOnOff(this.advancedSettings.bsd) });
+            }
+            if (axCur !== this.advancedSettings.ax) {
+                changes.push({ label: 'Wi-Fi 6(802.11ax)', from: this.formatOnOff(axCur), to: this.formatOnOff(this.advancedSettings.ax) });
+            }
+            if (txbfCur !== this.advancedSettings.txbf) {
+                changes.push({ label: 'MU-MIMO', from: this.formatOnOff(txbfCur), to: this.formatOnOff(this.advancedSettings.txbf) });
+            }
+            if (dfsCur !== this.advancedSettings.dfs) {
+                changes.push({ label: 'DFS(5G)', from: this.formatOnOff(dfsCur), to: this.formatOnOff(this.advancedSettings.dfs) });
+            }
+            if ((this.advancedSettings.country || '') !== (countryCur || '')) {
+                changes.push({ label: '国家码', from: countryCur || '-', to: this.advancedSettings.country || '-' });
+            }
+            if (this.advancedSettings.meshSupport && meshCur !== this.advancedSettings.mesh) {
+                changes.push({ label: 'Mesh 自动组网', from: this.formatOnOff(meshCur), to: this.formatOnOff(this.advancedSettings.mesh) });
+            }
+            return changes;
+        },
+        async saveAdvancedSettings() {
+            this.advancedSettings.saving = true;
+            this.advancedSettings.msg = '';
+            this.startSaveStatus();
+            let ok = false;
+            try {
+                const meshCur = (this.routerMesh && (this.routerMesh.enabled === true || String(this.routerMesh.enabled) === '1'));
+                const meshNeeds = this.advancedSettings.meshSupport && (meshCur !== this.advancedSettings.mesh);
+                const params = new URLSearchParams();
+                params.set('band', 'both');
+                params.set('bsd', this.advancedSettings.bsd ? '1' : '0');
+                params.set('ax', this.advancedSettings.ax ? '1' : '0');
+                params.set('txbf', this.advancedSettings.txbf ? '1' : '0');
+                params.set('dfs', this.advancedSettings.dfs ? '1' : '0');
+                if (this.advancedSettings.country) {
+                    params.set('country', this.advancedSettings.country);
+                }
+                if (this.advancedSettings.meshSupport && meshNeeds) {
+                    params.set('mesh', this.advancedSettings.mesh ? '1' : '0');
+                }
+                if (item.key) params.set('key', item.key);
+                const res = await fetch(ROUTER_SET_API, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: params
+                });
+                const data = await res.json();
+                if (!data || data.ok !== true) {
+                    throw new Error((data && data.error) ? data.error : '操作失败');
+                }
+                this.advancedSettings.msg = '已保存';
+                this.advancedDirty = false;
+                this.fetchRouterStatus();
+                ok = true;
+            } catch (e) {
+                this.advancedSettings.msg = (e && e.message) ? e.message : '操作失败';
+            } finally {
+                this.advancedSettings.saving = false;
+                this.finishSaveStatus(ok);
+            }
+        },
+        applyAdvancedSettings() {
+            const changes = this.buildAdvancedChanges();
+            if (changes.length === 0) {
+                this.advancedSettings.msg = '没有可保存的修改';
+                return;
+            }
+            if (this.advancedSettings.meshSupport) {
+                const meshCur = (this.routerMesh && (this.routerMesh.enabled === true || String(this.routerMesh.enabled) === '1'));
+                const meshState = this.advancedSettings.meshState;
+                if (meshCur && !this.advancedSettings.mesh) {
+                    if (meshState === 2) {
+                        this.advancedSettings.msg = '检测到当前设备已组成 Mesh 网络，无法关闭 Mesh 自动组网。如需坚持关闭，请重置路由器。';
+                        return;
+                    }
+                    if (meshState === 3) {
+                        this.advancedSettings.msg = '检测到当前设备正在 Mesh 组网过程中，无法关闭 Mesh 自动组网。请稍等。';
+                        return;
+                    }
+                }
+            }
+            this.openConfirm(
+                changes,
+                '修改将重启 Wi-Fi，设备可能会短暂断开连接。',
+                async () => this.saveAdvancedSettings()
+            );
+        },
+                buildExtraChanges(item, base) {
+            const changes = [];
+            const curEnabled = !(base.disabled === true || String(base.disabled) === '1');
+            const curHidden = (base.hidden === true || String(base.hidden) === '1');
+            const curEnc = base.encryption || 'psk2';
+            if (curEnabled !== item.enabled) {
+                changes.push({ label: '开关', from: this.formatOnOff(curEnabled), to: this.formatOnOff(item.enabled) });
+            }
+            if (item.ssid && item.ssid !== base.ssid) {
+                changes.push({ label: 'SSID', from: base.ssid || '-', to: item.ssid });
+            }
+            if (curHidden !== item.hidden) {
+                changes.push({ label: '隐藏网络', from: this.formatHiddenText(curHidden), to: this.formatHiddenText(item.hidden) });
+            }
+            if (item.encryption !== curEnc) {
+                changes.push({
+                    label: '加密方式',
+                    from: this.getOptionLabel(this.encryptionOptions, curEnc),
+                    to: this.getOptionLabel(this.encryptionOptions, item.encryption)
+                });
+            }
+            if (item.key) {
+                changes.push({ label: '密码', from: '******', to: '已修改' });
+            }
+            if (item.group === 'custom') {
+                const normBool = (val, def) => {
+                    if (val === true || String(val) === '1') return true;
+                    if (val === false || String(val) === '0') return false;
+                    return def;
+                };
+                const normStr = (val, def) => {
+                    if (val === undefined || val === null || String(val) === '') return def;
+                    return String(val);
+                };
+                const curNoF = normBool(base.noforwarding, false);
+                if (curNoF !== item.noforwarding) {
+                    changes.push({ label: '客户端隔离', from: this.formatOnOff(curNoF), to: this.formatOnOff(item.noforwarding) });
+                }
+                const curWps = normStr(base.wpsdevicename, 'XIAOMI_ROUTER_GUEST');
+                if ((item.wpsdevicename || '') !== curWps) {
+                    changes.push({ label: 'WPS 设备名', from: curWps || '-', to: item.wpsdevicename || '-' });
+                }
+                const curMbss = normStr(base.mbssmaxstanum, '64');
+                if (String(item.mbssmaxstanum || '') !== curMbss) {
+                    changes.push({ label: '最大连接数', from: curMbss, to: String(item.mbssmaxstanum || '') });
+                }
+                const curWmm = normBool(base.wmm, true);
+                if (curWmm !== item.wmm) {
+                    changes.push({ label: 'WMM', from: this.formatOnOff(curWmm), to: this.formatOnOff(item.wmm) });
+                }
+                const curIgmp = normBool(base.igmpsnenable, true);
+                if (curIgmp !== item.igmpsnenable) {
+                    changes.push({ label: 'IGMP Snooping', from: this.formatOnOff(curIgmp), to: this.formatOnOff(item.igmpsnenable) });
+                }
+                const curRrm = normBool(base.rrm, true);
+                if (curRrm !== item.rrm) {
+                    changes.push({ label: '802.11k (RRM)', from: this.formatOnOff(curRrm), to: this.formatOnOff(item.rrm) });
+                }
+                const curWnm = normBool(base.wnm, true);
+                if (curWnm !== item.wnm) {
+                    changes.push({ label: '802.11v (WNM)', from: this.formatOnOff(curWnm), to: this.formatOnOff(item.wnm) });
+                }
+                const curBsd = normBool(base.bsd, true);
+                if (curBsd !== item.bsd) {
+                    changes.push({ label: 'Band Steering', from: this.formatOnOff(curBsd), to: this.formatOnOff(item.bsd) });
+                }
+                const curMap = normBool(base.map, false);
+                if (curMap !== item.map) {
+                    changes.push({ label: 'EasyMesh', from: this.formatOnOff(curMap), to: this.formatOnOff(item.map) });
+                }
+                const curMapType = normStr(base.mapbsstype, '32');
+                if (String(item.mapbsstype || '') !== curMapType) {
+                    changes.push({ label: 'MapBSSType', from: curMapType, to: String(item.mapbsstype || '') });
+                }
+                const curMac = normStr(base.macfilter, 'disabled');
+                if (curMac !== item.macfilter) {
+                    changes.push({ label: 'MAC过滤', from: this.getOptionLabel(this.macfilterOptions, curMac), to: this.getOptionLabel(this.macfilterOptions, item.macfilter) });
+                }
+            }
+            return changes;
+        },
+        async saveExtraSettings(item) {
+            item.saving = true;
+            item.msg = '';
+            this.startSaveStatus();
+            let ok = false;
+            try {
+                const params = new URLSearchParams();
+                params.set('section', item.section);
+                params.set('enable', item.enabled ? '1' : '0');
+                params.set('ssid', item.ssid);
+                params.set('hidden', item.hidden ? '1' : '0');
+                params.set('encryption', item.encryption);
+                if (item.group === 'custom') {
+                    params.set('noforwarding', item.noforwarding ? '1' : '0');
+                    params.set('wpsdevicename', item.wpsdevicename || 'XIAOMI_ROUTER_GUEST');
+                    params.set('mbssmaxstanum', item.mbssmaxstanum || '64');
+                    params.set('wmm', item.wmm ? '1' : '0');
+                    params.set('igmpsnenable', item.igmpsnenable ? '1' : '0');
+                    params.set('rrm', item.rrm ? '1' : '0');
+                    params.set('wnm', item.wnm ? '1' : '0');
+                    params.set('bsd', item.bsd ? '1' : '0');
+                    params.set('map', item.map ? '1' : '0');
+                    params.set('mapbsstype', item.mapbsstype || '32');
+                    params.set('macfilter', item.macfilter || 'disabled');
+                }
+                if (item.key) params.set('key', item.key);
+                const res = await fetch(ROUTER_SET_API, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: params
+                });
+                const data = await res.json();
+                if (!data || data.ok !== true) {
+                    throw new Error((data && data.error) ? data.error : '操作失败');
+                }
+                cfg.key = '';
+                cfg.msg = '已保存';
+                this.routerSettingsDirty = false;
+                this.fetchRouterStatus();
+                ok = true;
+            } catch (e) {
+                cfg.msg = (e && e.message) ? e.message : '操作失败';
+            } finally {
+                item.saving = false;
+                this.finishSaveStatus(ok);
+            }
+        },
+        applyExtraSettings(item, base) {
+            const changes = this.buildExtraChanges(item, base);
+            if (changes.length === 0) {
+                cfg.msg = '没有可保存的修改';
+                return;
+            }
+            this.openConfirm(
+                changes,
+                '修改将重启 Wi-Fi，设备可能会短暂断开连接',
+                async () => this.saveExtraSettings(item)
+            );
+        },
+        async saveCustomSsid() {
+            const cfg = this.newCustom;
+            cfg.creating = true;
+            cfg.msg = '';
+            this.startSaveStatus();
+            let ok = false;
+            try {
+                const params = new URLSearchParams();
+                params.set('custom', 'add');
+                params.set('band', cfg.band);
+                params.set('ssid', cfg.ssid);
+                params.set('hidden', cfg.hidden ? '1' : '0');
+                params.set('encryption', cfg.encryption);
+                params.set('enable', '1');
+                if (cfg.vifidx) params.set('vifidx', cfg.vifidx);
+                params.set('noforwarding', cfg.noforwarding ? '1' : '0');
+                params.set('wpsdevicename', cfg.wpsdevicename || 'XIAOMI_ROUTER_GUEST');
+                params.set('mbssmaxstanum', cfg.mbssmaxstanum || '64');
+                params.set('wmm', cfg.wmm ? '1' : '0');
+                params.set('igmpsnenable', cfg.igmpsnenable ? '1' : '0');
+                params.set('rrm', cfg.rrm ? '1' : '0');
+                params.set('wnm', cfg.wnm ? '1' : '0');
+                params.set('bsd', cfg.bsd ? '1' : '0');
+                params.set('map', cfg.map ? '1' : '0');
+                params.set('mapbsstype', cfg.mapbsstype || '32');
+                params.set('macfilter', cfg.macfilter || 'disabled');
+                if (cfg.key) params.set('key', cfg.key);
+                const res = await fetch(ROUTER_SET_API, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: params
+                });
+                const data = await res.json();
+                if (!data || data.ok !== true) {
+                    throw new Error((data && data.error) ? data.error : '操作失败');
+                }
+                cfg.ssid = '';
+                cfg.key = '';
+                cfg.hidden = false;
+                cfg.vifidx = "";
+                cfg.noforwarding = false;
+                cfg.wpsdevicename = "XIAOMI_ROUTER_GUEST";
+                cfg.mbssmaxstanum = "64";
+                cfg.wmm = true;
+                cfg.igmpsnenable = true;
+                cfg.rrm = true;
+                cfg.wnm = true;
+                cfg.bsd = true;
+                cfg.map = false;
+                cfg.mapbsstype = "32";
+                cfg.macfilter = "disabled";
+                cfg.msg = '已创建';
+                this.fetchRouterStatus();
+                ok = true;
+            } catch (e) {
+                cfg.msg = (e && e.message) ? e.message : '操作失败';
+            } finally {
+                cfg.creating = false;
+                this.finishSaveStatus(ok);
+            }
+        },
+        createCustomSsid() {
+            const cfg = this.newCustom;
+            cfg.msg = '';
+            const normalizeDigits = (val, fallback) => {
+                if (val === undefined || val === null) return fallback;
+                let s = String(val);
+                s = s.replace(/[０-９]/g, (d) => String.fromCharCode(d.charCodeAt(0) - 0xFF10 + 48));
+                s = s.replace(/[\s\u200B-\u200D\uFEFF]/g, '');
+                if (s === '') return fallback;
+                if (!/^\d+$/.test(s)) return null;
+                return s;
+            };
+            const mbss = normalizeDigits(cfg.mbssmaxstanum, '64');
+            const mapbsstype = normalizeDigits(cfg.mapbsstype, '32');
+            if (!cfg.ssid) {
+                cfg.msg = 'SSID不能为空';
+                return;
+            }
+            if (cfg.encryption !== 'none' && (!cfg.key || cfg.key.length < 8)) {
+                cfg.msg = '密码至少 8 位';
+                return;
+            }
+            if (cfg.vifidx && (!/^\d+$/.test(cfg.vifidx) || Number(cfg.vifidx) < 7)) {
+                cfg.msg = 'vifidx 序号必须 >= 7';
+                return;
+            }
+            if (mbss === null) {
+                cfg.msg = 'MbssMaxStaNum 必须是数字';
+                return;
+            }
+            if (mapbsstype === null) {
+                cfg.msg = 'MapBSSType 必须是数字';
+                return;
+            }
+            cfg.mbssmaxstanum = mbss || '64';
+            cfg.mapbsstype = mapbsstype || '32';
+            const bandLabel = cfg.band === 'wl0' ? '5G' : '2.4G';
+            const changes = [
+                { label: '频段', from: '-', to: bandLabel },
+                { label: 'SSID', from: '-', to: cfg.ssid },
+                { label: '隐藏网络', from: '可见', to: this.formatHiddenText(cfg.hidden) },
+                { label: '加密方式', from: '-', to: this.getOptionLabel(this.encryptionOptions, cfg.encryption) }
+            ];
+            if (cfg.key) changes.push({ label: '密码', from: '-', to: '已设置' });
+            this.openConfirm(
+                changes,
+                '新增 SSID 将重启 Wi-Fi，设备可能会短暂断开连接。',
+                async () => this.saveCustomSsid()
+            );
+        },
+        async deleteCustomSsid(item) {
+            if (!item || !item.section) return;
+            this.openConfirm(
+                [{ label: '\u5220\u9664 SSID', from: item.ssid || '-', to: '\u5c06\u79fb\u9664' }],
+                '\u5220\u9664\u540e\u65e0\u6cd5\u6062\u590d\uff0c\u8bf7\u786e\u8ba4\u3002',
+                async () => {
+                    this.startSaveStatus();
+                    let ok = false;
+                    try {
+                        const params = new URLSearchParams();
+                        params.set('custom', 'delete');
+                        params.set('section', item.section);
+                        const res = await fetch(ROUTER_SET_API, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                            body: params
+                        });
+                        const data = await res.json();
+                        if (!data || data.ok !== true) {
+                            throw new Error((data && data.error) ? data.error : '\u64cd\u4f5c\u5931\u8d25');
+                        }
+                        this.fetchRouterStatus();
+                        ok = true;
+                    } catch (e) {
+                        item.msg = (e && e.message) ? e.message : '\u64cd\u4f5c\u5931\u8d25';
+                    } finally {
+                        this.finishSaveStatus(ok);
+                    }
+                }
+            );
+        },
+        findExtraBase(section, type) {
+            const list = (type === 'wifi5')
+                ? (this.routerExtras.wifi5 || [])
+                : (type === 'custom')
+                    ? (this.routerExtras.custom || [])
+                    : (this.routerExtras.guest || []);
+            return list.find(e => e.section === section) || {};
+        },
+        async saveRouterSettings(band) {
+            const cfg = this.routerSettings[band];
+            if (!cfg.ssid) {
+                cfg.msg = 'SSID不能为空';
+                return;
+            }
+            if (cfg.encryption !== 'none' && cfg.key && cfg.key.length < 8) {
+                cfg.msg = '密码至少 8 位';
+                return;
+            }
+            cfg.saving = true;
+            cfg.msg = '';
+            this.startSaveStatus();
+            let ok = false;
+            try {
+                const params = new URLSearchParams();
+                params.set('band', band);
+                params.set('enable', cfg.enabled ? '1' : '0');
+                params.set('radio', cfg.radioEnabled ? '1' : '0');
+                params.set('ssid', cfg.ssid);
+                params.set('hidden', cfg.hidden ? '1' : '0');
+                params.set('encryption', cfg.encryption);
+                params.set('channel', cfg.channel);
+                params.set('bw', cfg.bw);
+                params.set('txpwr', cfg.txpwr);
+                if (cfg.key) params.set('key', cfg.key);
+                const res = await fetch(ROUTER_SET_API, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: params
+                });
+                const data = await res.json();
+                if (!data || data.ok !== true) {
+                    throw new Error((data && data.error) ? data.error : '操作失败');
+                }
+                cfg.key = '';
+                cfg.msg = '已保存';
+                this.routerSettingsDirty = false;
+                this.fetchRouterStatus();
+                ok = true;
+            } catch (e) {
+                cfg.msg = (e && e.message) ? e.message : '操作失败';
+            } finally {
+                cfg.saving = false;
+                this.finishSaveStatus(ok);
+            }
+        },
+        applyRouterSettings(band) {
+            if (!band || !this.routerSettings[band]) return;
+            const cfg = this.routerSettings[band];
+            cfg.msg = '';
+            const changes = this.buildRouterChanges(band);
+            if (changes.length === 0) {
+                cfg.msg = '没有可保存的修改';
+                return;
+            }
+            this.openConfirm(
+                changes,
+                '修改将重启 Wi-Fi，设备可能会短暂断开连接。',
+                async () => this.saveRouterSettings(band)
+            );
+        },
+        async fetchRouterStatus() {
+            this.routerModal.loading = true;
+            this.routerModal.error = '';
+            const urls = [ROUTER_API, ROUTER_API_FALLBACK];
+            try {
+                let data = null;
+                for (const url of urls) {
+                    try {
+                        const res = await fetch(url);
+                        if (!res.ok) continue;
+                        const json = await res.json();
+                        if (json && json.ok === false) {
+                            if (json.error) throw new Error(json.error);
+                        }
+                        data = json;
+                        break;
+                    } catch (e) {}
+                }
+                if (!data) throw new Error('获取路由器状态失败');
+                const mergeBand = (band) => {
+                    if (!band) return {};
+                    if (band.uci || band.iwinfo) {
+                        const u = band.uci || {};
+                        const i = band.iwinfo || {};
+                        return {
+                            ...u,
+                            ...i,
+                            channel: (i.channel !== undefined && i.channel !== null) ? i.channel : u.channel,
+                            frequency: i.frequency || u.frequency,
+                            bit_rate_mbps: (i.bit_rate_mbps !== undefined && i.bit_rate_mbps !== null) ? i.bit_rate_mbps : u.bit_rate_mbps,
+                            tx_power_dbm: (i.tx_power_dbm !== undefined && i.tx_power_dbm !== null) ? i.tx_power_dbm : u.tx_power_dbm,
+                            signal: (i.signal !== undefined && i.signal !== null) ? i.signal : u.signal,
+                            noise: (i.noise !== undefined && i.noise !== null) ? i.noise : u.noise,
+                            bssid: i.bssid || u.bssid,
+                            mode: i.mode || u.mode,
+                            ssid: i.ssid || u.ssid
+                        };
+                    }
+                    return band;
+                };
+                this.routerModal.data = {
+                    wl0: mergeBand(data.wl0),
+                    wl1: mergeBand(data.wl1)
+                };
+                this.routerMesh = data.mesh || { enabled: false, support: false, version: '' };
+                this.routerExtras = data.extras || { guest: [], wifi5: [], custom: [] };
+                if (!this.routerSettingsDirty) {
+                    this.syncRouterSettings();
+                }
+                if (!this.extrasDirty) {
+                    this.syncExtraSettings();
+                } else {
+                    this.syncExtraSettings(true);
+                }
+                if (!this.advancedDirty) {
+                    this.syncAdvancedSettings();
+                }
+            } catch (e) {
+                this.routerModal.error = (e && e.message) ? e.message : '获取路由器状态失败';
+            } finally {
+                this.routerModal.loading = false;
+            }
+        },
+        findClientByMac(mac) {
+            const m = this.normalizeMac(mac);
+            return this.clients.find(c => this.normalizeMac(c.mac) === m);
+        },
+        normalizeAclList(list) {
+            if (!Array.isArray(list)) return [];
+            return list.map(item => {
+                if (typeof item === 'string') {
+                    return { mac: this.normalizeMac(item), name: '', ip: '' };
+                }
+                if (item && typeof item === 'object') {
+                    return {
+                        mac: this.normalizeMac(item.mac || ''),
+                        name: item.name || '',
+                        ip: item.ip || ''
+                    };
+                }
+                return null;
+            }).filter(item => item && item.mac);
+        },
+        displayValue(val, fallback = '-') {
+            if (val === undefined || val === null || val === '') return fallback;
+            return val;
+        },
+        formatDbm(val) {
+            if (val === undefined || val === null || val === '') return '-';
+            return `${val} dBm`;
+        },
+        formatRate(val) {
+            if (val === undefined || val === null || val === '') return '-';
+            return `${val} Mbps`;
+        },
+        formatSignal(info) {
+            if (!info) return '-';
+            const sig = (info.signal !== undefined && info.signal !== null) ? `${info.signal} dBm` : '-';
+            const noise = (info.noise !== undefined && info.noise !== null) ? `${info.noise} dBm` : '-';
+            return `${sig} / ${noise}`;
+        },
+        formatChannel(info) {
+            if (!info) return '-';
+            let channel = '-';
+            if (info.channel !== undefined && info.channel !== null) {
+                channel = String(info.channel) === '0' ? '自动' : `CH ${info.channel}`;
+            }
+            const freq = info.frequency ? info.frequency : '';
+            return freq ? `${channel} (${freq})` : channel;
+        },
+        formatDfs(val) {
+            if (val === true) return '已开启';
+            if (val === false) return '已关闭';
+            return '未知';
+        },
+        formatBw(val) {
+            if (val === undefined || val === null || val === '') return '-';
+            if (String(val) === '0') return '自动';
+            const num = parseInt(val, 10);
+            if (!isNaN(num)) return `${num}MHz`;
+            return val;
+        },
+        formatAutoch(val) {
+            if (val === true || String(val) === '1') return '开启';
+            if (val === false || String(val) === '0') return '关闭';
+            return '未知';
+        },
+        formatTxpwr(val) {
+            if (val === undefined || val === null || val === '') return '-';
+            if (String(val).toLowerCase() === 'max') return '最大';
+            return val;
+        },
+        formatDisabled(val) {
+            if (val === true || String(val) === '1') return '已禁用';
+            if (val === false || String(val) === '0') return '启用';
+            return '未知';
+        },
+        routerBand(band) {
+            if (!this.routerModal.data) return {};
+            return this.routerModal.data[band] || {};
+        },
+        async fetchAclList() {
+            try {
+                const res = await fetch(`${ACL_API}?action=list`);
+                const data = await res.json();
+                if (data && typeof data === 'object') {
+                    this.acl = {
+                        wl0: this.normalizeAclList(data.wl0),
+                        wl1: this.normalizeAclList(data.wl1)
+                    };
+                }
+            } catch (e) { console.error(e); }
+            finally { this.aclLastFetch = Date.now(); }
+        },
+        async callAcl(action, mac, band, extra = {}) {
+            let url = `${ACL_API}?action=${encodeURIComponent(action)}&mac=${encodeURIComponent(mac)}&bands=${encodeURIComponent(band)}`;
+            if (extra.name) url += `&name=${encodeURIComponent(extra.name)}`;
+            if (extra.ip) url += `&ip=${encodeURIComponent(extra.ip)}`;
+            const res = await fetch(url);
+            const data = await res.json();
+            if (!data || data.ok !== true) {
+                throw new Error((data && data.error) ? data.error : '操作失败');
+            }
+            await this.fetchAclList();
+            return data;
+        },
+        async applyAcl(action) {
+            if (!this.actionModal.client || !this.actionModal.client.mac) return;
+            this.actionModal.loading = true;
+            this.actionModal.error = '';
+            try {
+                const mac = this.actionModal.client.mac;
+                const band = this.actionModal.band || 'both';
+                const extra = (action === 'ban') ? { name: this.actionModal.client.name || '', ip: this.actionModal.client.ip || '' } : {};
+                await this.callAcl(action, mac, band, extra);
+                this.closeAction();
+            } catch (e) {
+                this.actionModal.error = (e && e.message) ? e.message : '操作失败';
+            } finally {
+                this.actionModal.loading = false;
+            }
+        },
+        async unbanFromList(mac, band) {
+            this.banList.loading = true;
+            this.banList.error = '';
+            try {
+                await this.callAcl('unban', mac, band);
+            } catch (e) {
+                this.banList.error = (e && e.message) ? e.message : '操作失败';
+            } finally {
+                this.banList.loading = false;
+            }
+        },
+        async fetchData() {
+            this.loading = true;
+            try {
+                const res = await fetch('/cgi-bin/luci/admin/status/wifi_json');
+                this.clients = await res.json();
+                this.updateVendors();
+                if (Date.now() - this.aclLastFetch > 8000) {
+                    this.fetchAclList();
+                }
+            } catch (e) { console.error(e); }
+            finally { this.loading = false; }
+        },
+        async updateVendors() {
+            for (let c of this.clients) {
+                const prefix = c.mac.substring(0, 8).toUpperCase();
+                if (!this.vendorCache[prefix]) {
+                    try {
+                        const res = await fetch(`/cgi-bin/luci/admin/status/vendor_lookup?mac=${encodeURIComponent(c.mac)}`);
+                        const text = await res.text();
+                        if (text && !text.includes("ERROR")) {
+                            this.vendorCache[prefix] = text.trim();
+                            localStorage.setItem(this.cacheKey, JSON.stringify(this.vendorCache));
+                        }
+                    } catch (e) {}
+                }
+                c.vendor = this.vendorCache[prefix];
+            }
+        },
+        getBrandMeta(client) {
+            const nameRaw = (client.name || "");
+            const name = nameRaw.toLowerCase();
+            const vendor = (client.vendor || "").toLowerCase();
+            const text = `${name} ${vendor}`;
+
+            const meta = { icon: 'bi-patch-question', bgColor: '#adb5bd', logo: '', tag: '未知设备', tags: [] };
+            const tagSet = new Set();
+            let brandSet = false;
+            let typeSet = false;
+
+            const addTag = (label, kind) => {
+                if (!label) return;
+                const key = `${kind}:${label}`;
+                if (tagSet.has(key)) return;
+                tagSet.add(key);
+                meta.tags.push({ label, kind });
+            };
+            const setBrand = (icon, bgColor, logo, label) => {
+                if (!label) return;
+                addTag(label, 'brand');
+                if (!brandSet) {
+                    meta.icon = icon || meta.icon;
+                    meta.bgColor = bgColor || meta.bgColor;
+                    meta.logo = logo || '';
+                    meta.tag = label;
+                    brandSet = true;
+                }
+            };
+            const addType = (label, icon, bgColor) => {
+                if (!label) return;
+                addTag(label, 'type');
+                if (!brandSet && !typeSet) {
+                    meta.tag = label;
+                    if (icon) meta.icon = icon;
+                    if (bgColor) meta.bgColor = bgColor;
+                    typeSet = true;
+                }
+            };
+
+            // --- 1. Phones & PCs ---
+            if (vendor.includes('apple') || name.includes('iphone') || name.includes('ipad') || name.includes('macbook') || name.includes('apple-watch'))
+                setBrand('bi-apple', '#000000', 'https://www.apple.com/favicon.ico', 'Apple');
+
+            if (vendor.includes('xiaomi') || vendor.includes('miui') || vendor.includes('hyperos') || name.includes('mi-') || name.includes('mijia') || name.includes('redmi') || name.includes('xiaomi'))
+                setBrand('bi-tablet-landscape-fill', '#ff6700', 'https://www.mi.com/favicon.ico', '小米');
+
+            if (vendor.includes('huawei') || vendor.includes('honor'))
+                setBrand('bi-flower1', '#ed1c24', 'https://www.huawei.com/favicon.ico', '华为/荣耀');
+
+            if (vendor.includes('oppo') || name.includes('oppo'))
+                setBrand('bi-phone-fill', '#05a06a', 'https://www.oppo.com/favicon.ico', 'OPPO');
+            if (vendor.includes('vivo') || name.includes('vivo'))
+                setBrand('bi-phone-fill', '#1648ff', 'https://www.vivo.com/favicon.ico', 'VIVO');
+            if (vendor.includes('meizu') || name.includes('meizu'))
+                setBrand('bi-phone-fill', '#00b4ff', 'https://icons.duckduckgo.com/ip3/www.meizu.com.ico', '魅族');
+
+            if (vendor.includes('samsung') || name.includes('samsung'))
+                setBrand('bi-phone-fill', '#1428a0', 'https://icons.duckduckgo.com/ip3/www.samsung.com.ico', '三星');
+
+            if (vendor.includes('intel') || name.includes('desktop') || name.includes('pc-'))
+                setBrand('bi-pc-display', '#0071c5', '', 'PC/工作站');
+            if (vendor.includes('dell')) setBrand('bi-pc-display', '#007db8', 'https://www.dell.com/favicon.ico', '戴尔');
+            if (vendor.includes('lenovo')) setBrand('bi-laptop', '#e2231a', 'https://www.lenovo.com.cn/favicon.ico', '联想');
+            if (vendor.includes('microsoft') || vendor.includes('surface')) setBrand('bi-windows', '#00a4ef', '', '微软');
+
+            // --- 2. Smart Home & IoT ---
+            if (vendor.includes('tuya') || vendor.includes('hangzhou tuya') || name.includes('tuya'))
+                setBrand('bi-cpu-fill', '#ff5000', 'https://www.tuya.com.ico', '涂鸦智能');
+            if (vendor.includes('espressif') || name.includes('espressif'))
+                setBrand('bi-cpu-fill', '#e73527', 'https://icons.duckduckgo.com/ip3/www.espressif.com.ico', '乐鑫');
+            if (vendor.includes('bouffalo') || name.includes('bouffalo'))
+                setBrand('bi-cpu-fill', '#3383BD', 'https://icons.duckduckgo.com/ip3/www.bouffalolab.com.ico', '博流');
+            if (vendor.includes('b&t') || vendor.includes('beken') || name.includes('beken'))
+                setBrand('bi-cpu-fill', '#e73527', 'https://icons.duckduckgo.com/ip3/www.bekencorp.com.ico', '博通集成');
+            if (vendor.includes('lumi united') || name.includes('aqara')) setBrand('bi-house-heart-fill', '#00a1ff', 'https://icons.duckduckgo.com/ip3/www.aqara.cn.ico', 'Aqara绿米');
+            if (vendor.includes('itead')) setBrand('bi-toggle-on', '#25a9e0', 'https://icons.duckduckgo.com/ip3/camera.ewelink.cn.ico', 'Sonoff易微联');
+            if (vendor.includes('yeelight')) setBrand('bi-lightbulb', '#f39800', 'https://cn.yeelight.com/favicon.ico', 'Yeelight');
+
+            // --- 3. Appliances ---
+            if (vendor.includes('midea') || name.includes('midea')) setBrand('bi-house-door-fill', '#0092d8', 'https://www.midea.cn/favicon.ico', '美的');
+            if (vendor.includes('haier') || vendor.includes('qingdao haier')) setBrand('bi-house-door-fill', '#005aab', 'https://www.haier.com/favicon.ico', '海尔');
+            if (vendor.includes('hisense')) setBrand('bi-house-door-fill', '#008b8b', 'https://www.hisense.com/favicon.ico', '海信');
+            if (vendor.includes('gree')) setBrand('bi-house-door-fill', '#b22222', 'https://icons.duckduckgo.com/ip3/www.gree.com.ico', '格力');
+            if (vendor.includes('tcl')) setBrand('bi-tv', '#ff0000', 'https://icons.duckduckgo.com/ip3/www.tcl.com.ico', 'TCL');
+            if (vendor.includes('skyworth')) setBrand('bi-tv', '#003399', 'https://www.skyworth.com/favicon.ico', '创维');
+            if (vendor.includes('imilab') || name.includes('chuangmi')) setBrand('bi-camera-video-fill', '#555555', 'https://icons.duckduckgo.com/ip3/www.imilab.com.ico', '创米/小白');
+            if (vendor.includes('philips') || vendor.includes('signify')) setBrand('bi-lightbulb-fill', '#0b5ed7', 'https://www.philips.com.cn/favicon.ico', '飞利浦');
+
+            // --- 4. Media & Storage ---
+            if (vendor.includes('nintendo')) setBrand('bi-controller', '#e60012', '', '任天堂');
+            if (vendor.includes('sony') && (name.includes('playstation') || name.includes('ps4') || name.includes('ps5')))
+                setBrand('bi-controller', '#003791', '', 'PlayStation');
+            if (vendor.includes('synology') || name.includes('synology') || name.includes('ds918') || name.includes('ds920'))
+                setBrand('bi-hdd-stack-fill', '#212529', '', '群晖 NAS');
+            if (vendor.includes('qnap')) setBrand('bi-hdd-stack-fill', '#0078d4', '', '威联通 NAS');
+            if (name.includes('speaker') || name.includes('homepod') || name.includes('echo') || name.includes('sonos'))
+                setBrand('bi-speaker-fill', '#444', '', '智能音箱');
+
+            // --- 5. Network & Office ---
+            if (vendor.includes('hikvision') || name.includes('hikvision')) setBrand('bi-camera-video-fill', '#ee1c25', '', '海康威视');
+            if (vendor.includes('dahua')) setBrand('bi-camera-video-fill', '#ff6a00', '', '大华监控');
+            if (vendor.includes('tp-link') || vendor.includes('tplink')) setBrand('bi-router-fill', '#00bee7', '', 'TP-Link');
+            if (vendor.includes('hp') || vendor.includes('hewlett-packard') || name.includes('printer'))
+                setBrand('bi-printer-fill', '#0096d6', '', '打印机');
+            if (vendor.includes('canon')) setBrand('bi-printer-fill', '#ed1c24', '', '佳能');
+            if (vendor.includes('epson')) setBrand('bi-printer-fill', '#003399', '', '爱普生');
+            if (vendor.includes('fn-link') || vendor.includes('realtek') || vendor.includes('broadcom') || vendor.includes('mediatek'))
+                setBrand('bi-wifi', '#6c757d', '', 'WiFi 模块');
+
+            // --- 6. Device Type Tags (name/vendor) ---
+            const typeRules = [
+                { label: '人在传感器', keys: ['pit-aio', 'ld2410', 'ld2420'] },
+                { label: '电视/机顶盒', keys: ['tv', 'television', '电视', '机顶盒', 'set-top'], icon: 'bi-tv', color: '#333333' },
+                { label: '摄像头', keys: ['camera', '摄像', '监控', 'ipcam'] , icon: 'bi-camera-video-fill', color: '#333333' },
+                { label: '路由器/网关', keys: ['router', 'gateway', '路由', '网关'], icon: 'bi-router-fill', color: '#00bee7' },
+                { label: '智能音箱', keys: ['speaker', 'soundbar', 'sound', 'sonos', 'echo', 'homepod', '音箱'], icon: 'bi-speaker-fill', color: '#444444' },
+                { label: '灯/灯泡', keys: ['light', 'bulb', 'lamp', '灯', '灯泡'], icon: 'bi-lightbulb', color: '#f59e0b' },
+                { label: '插座', keys: ['plug', 'socket', '插座'], icon: 'bi-plug', color: '#0f766e' },
+                { label: '开关', keys: ['switch', '开关'] },
+                { label: '门锁', keys: ['door lock','doorlock', '门锁'] },
+                { label: '风扇', keys: ['fan', '风扇'] },
+                { label: '门铃', keys: ['doorbell', '门铃'] },
+                { label: '窗帘', keys: ['curtain', 'blind', '窗帘'] },
+                { label: '扫地机器人', keys: ['vacuum', 'roborock', 'roomba', '扫地', '吸尘'] },
+                { label: '空调', keys: ['air conditioner', 'aircon', '空调'] },
+                { label: '空气净化器', keys: ['air purifier', '空气净化', '净化器'] },
+                { label: '净水器', keys: ['water purifier', '净水', '净水器'] },
+                { label: '加湿器', keys: ['humidifier', '加湿器'] },
+                { label: '除湿机', keys: ['dehumidifier', '除湿机'] },
+                { label: '热水器', keys: ['water heater', '热水器', 'boiler', 'water-heater'] },
+                { label: '热水壶', keys: ['kettle', '热水壶', '电水壶'] },
+                { label: '电饭煲', keys: ['rice cooker', 'cooker', 'ricecooker', 'rice-cooker', '电饭煲', '电饭锅'] },
+                { label: '冰箱', keys: ['fridge', 'refrigerator', '冰箱'] },
+                { label: '洗衣机', keys: ['washing machine', 'washer', '洗衣机'] },
+                { label: '烘干机', keys: ['dryer', '烘干机'] },
+                { label: '洗碗机', keys: ['dishwasher', '洗碗机'] },
+                { label: '烤箱', keys: ['oven', '烤箱'] },
+                { label: '微波炉', keys: ['microwave', '微波炉'] },
+                { label: '空气炸锅', keys: ['air fryer', '空气炸锅'] },
+                { label: '电磁炉', keys: ['induction', '电磁炉', '电陶炉'] },
+                { label: '电脑', keys: ['desktop', 'laptop', 'notebook', '电脑'] , icon: 'bi-pc-display', color: '#4b5563' },
+                { label: '手机', keys: ['phone', 'android', 'iphone', '手机', 'note', 'ultra', 'pro', 'max', 'fold', 'flip'] , icon: 'bi-phone', color: '#6b7280' }
+            ];
+
+            for (const rule of typeRules) {
+                for (const k of rule.keys) {
+                    if (text.includes(k)) {
+                        addType(rule.label, rule.icon, rule.color);
+                        break;
+                    }
+                }
+            }
+
+            if (meta.tags.length === 0) addTag('未知设备', 'type');
+            return meta;
+        },
+        handleImgError(e) { e.target.style.display = 'none'; },
+        clearLocalCache() { localStorage.removeItem(this.cacheKey); this.vendorCache = {}; this.fetchData(); },
+        handleSort(key) {
+            if (this.sort.key === key) this.sort.order = (this.sort.order + 1) % 3;
+            else { this.sort.key = key; this.sort.order = 2; }
+        },
+        getSortIcon(key) {
+            if (this.sort.key !== key || this.sort.order === 0) return 'bi-arrow-down-up';
+            return this.sort.order === 1 ? 'bi-sort-up' : 'bi-sort-down';
+        },
+        getSignalClass(rssi) {
+            if (rssi > -55) return 'sig-excellent';
+            if (rssi > -70) return 'sig-good';
+            if (rssi > -80) return 'sig-fair';
+            return 'sig-poor';
+        },
+        getSignalIcon(rssi) {
+            if (rssi > -55) return 'bi-reception-4';
+            if (rssi > -70) return 'bi-reception-3';
+            if (rssi > -80) return 'bi-reception-2';
+            return 'bi-reception-1';
+        }
+    },
+    mounted() {
+        this.vendorCache = JSON.parse(localStorage.getItem(this.cacheKey) || '{}');
+        this.updateIsMobile();
+        window.addEventListener('resize', this.updateIsMobile);
+        this.fetchAclList();
+        this.fetchData();
+        this.fetchMonitorConfig();
+        setInterval(this.fetchData, 5000);
+    }
+}).mount('#app-wifi-monitor');
+
+
+</script>
+
+<%+footer%>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

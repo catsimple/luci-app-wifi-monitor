@@ -1,0 +1,261 @@
+#!/bin/sh
+echo "Content-type: application/json; charset=utf-8"
+echo ""
+
+MI_IP_DEFAULT="192.168.10.10"
+MI_IP="$(uci -q get wifi_monitor.main.mi_ip)"
+[ -z "$MI_IP" ] && MI_IP="$MI_IP_DEFAULT"
+SSH_BIN="ssh"
+SSH_OPTS="-o ConnectTimeout=3 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedAlgorithms=+ssh-rsa"
+
+fetch_uci() {
+    $SSH_BIN $SSH_OPTS root@"$MI_IP" "uci show wireless" 2>/dev/null
+}
+
+fetch_iwinfo() {
+    $SSH_BIN $SSH_OPTS root@"$MI_IP" "iwinfo wl0 info; echo '---SPLIT---'; iwinfo wl1 info" 2>/dev/null
+}
+
+fetch_mesh() {
+    $SSH_BIN $SSH_OPTS root@"$MI_IP" "uci -q get xiaoqiang.common.MESH_SWITCH; uci -q get xiaoqiang.common.MESH_VERSION; uci -q get misc.features.supportMesh; uci -q get misc.features.easymesh_switch; uci -q get xiaoqiang.common.NETMODE; uci -q get xiaoqiang.common.CAP_MODE; uci -q get xiaoqiang.common.EASYMESH_ROLE; pidof mapd; pidof topomon" 2>/dev/null
+}
+
+to_bool() {
+    if [ "$1" = "1" ]; then
+        echo "true"
+    elif [ "$1" = "0" ]; then
+        echo "false"
+    else
+        echo "null"
+    fi
+}
+
+parse_uci() {
+    awk '
+    function strip(v) { gsub(/^[ \t\r\n\047]+/,"",v); gsub(/[ \t\r\n\047]+$/,"",v); return v }
+    function esc(s) { gsub(/\\/,"\\\\",s); gsub(/"/,"\\\"",s); return s }
+    function bool(val) { if (val=="1") return "true"; if (val=="0") return "false"; return "null" }
+    function build(ifsec, devsec,    ifname, ssid, band, channel, bw, autoch, dfs, txpwr, iface_dis, dev_dis, country, hidden, encryption, ax, txbf, bsd) {
+        if (ifsec == "") return "{}";
+        ifname = data[ifsec,"ifname"];
+        ssid = esc(data[ifsec,"ssid"]);
+        hidden = data[ifsec,"hidden"]; if (hidden=="") hidden="null";
+        encryption = esc(data[ifsec,"encryption"]);
+        bsd = data[ifsec,"bsd"]; if (bsd=="") bsd="null";
+        band = esc(data[devsec,"band"]);
+        channel = data[devsec,"channel"]; if (channel=="") channel="null";
+        bw = data[devsec,"bw"]; if (bw=="") bw="null";
+        autoch = data[devsec,"autoch"]; if (autoch=="") autoch="null";
+        dfs = bool(data[devsec,"DfsEnable"]);
+        txpwr = esc(data[devsec,"txpwr"]);
+        iface_dis = bool(data[ifsec,"disabled"]);
+        dev_dis = bool(data[devsec,"disabled"]);
+        country = esc(data[devsec,"country"]);
+        ax = data[devsec,"ax"]; if (ax=="") ax="null";
+        txbf = data[devsec,"txbf"]; if (txbf=="") txbf="null";
+        return sprintf("{\"ifname\":\"%s\",\"device\":\"%s\",\"ssid\":\"%s\",\"hidden\":%s,\"encryption\":\"%s\",\"bsd\":%s,\"band\":\"%s\",\"channel\":%s,\"bw\":%s,\"autoch\":%s,\"dfs\":%s,\"txpwr\":\"%s\",\"iface_disabled\":%s,\"device_disabled\":%s,\"country\":\"%s\",\"ax\":%s,\"txbf\":%s}",
+            esc(ifname), esc(devsec), ssid, hidden, encryption, bsd, band, channel, bw, autoch, dfs, txpwr, iface_dis, dev_dis, country, ax, txbf);
+    }
+    {
+        line = $0;
+        if (index(line, "wireless.") != 1) next;
+        line = substr(line, 10);
+        eq = index(line, "=");
+        if (eq == 0) next;
+        left = substr(line, 1, eq - 1);
+        val = strip(substr(line, eq + 1));
+        dot = index(left, ".");
+        if (dot == 0) {
+            sec = left;
+            if (val == "wifi-device") {
+                if (!dev_flag[sec]++) dev_list[++dev_count] = sec;
+            } else if (val == "wifi-iface") {
+                if (!iface_flag[sec]++) iface_list[++iface_count] = sec;
+            }
+            next;
+        }
+        sec = substr(left, 1, dot - 1);
+        opt = substr(left, dot + 1);
+        data[sec, opt] = val;
+        if (!seen_flag[sec]++) seen_list[++seen_count] = sec;
+        if (opt == "custom_ssid") has_custom[sec] = 1;
+        if (opt == "ifname") ifname_map[val] = sec;
+    }
+    END {
+        iface_sec1 = ifname_map["wl0"];
+        iface_sec2 = ifname_map["wl1"];
+        dev1 = data[iface_sec1,"device"];
+        dev2 = data[iface_sec2,"device"];
+        printf "wl0=%s\n", build(iface_sec1, dev1);
+        printf "wl1=%s\n", build(iface_sec2, dev2);
+        gcount = 0; wcount = 0; ccount = 0; dcount = 0;
+        guest = ""; wifi5 = ""; custom = ""; debug = ""; sections = ""; ifaces = "";
+        for (i = 1; i <= seen_count; i++) {
+            s = seen_list[i];
+            sections = sections (i > 1 ? "," : "") "\"" esc(s) "\"";
+        }
+        for (i = 1; i <= iface_count; i++) {
+            s = iface_list[i];
+            ifaces = ifaces (i > 1 ? "," : "") "\"" esc(s) "\"";
+        }
+        for (i = 1; i <= seen_count; i++) {
+            s = seen_list[i];
+            if (!(s in iface) && data[s,"mode"] == "" && data[s,"ssid"] == "") continue;
+            if (s == iface_sec1 || s == iface_sec2) continue;
+            if (data[s,"mode"] != "ap") continue;
+            dev = data[s,"device"];
+            band = esc(data[dev,"band"]);
+            ssid_s = data[s,"ssid"];
+            net = data[s,"network"];
+            disabled = data[s,"disabled"]; if (disabled=="") disabled="null";
+            hidden = data[s,"hidden"]; if (hidden=="") hidden="null";
+            enc = esc(data[s,"encryption"]);
+            vif = data[s,"vifidx"];
+            vifjson = "null";
+            vifn = -1;
+            if (vif ~ /^[0-9]+$/) { vifjson = vif; vifn = vif + 0; }
+            ifname = esc(data[s,"ifname"]);
+            nof = data[s,"NoForwarding"]; if (nof=="") nof="null";
+            wps = esc(data[s,"wpsdevicename"]);
+            mbss = data[s,"MbssMaxStaNum"]; if (mbss=="") mbss="null";
+            wmm = data[s,"wmm"]; if (wmm=="") wmm="null";
+            igmp = data[s,"IgmpSnEnable"]; if (igmp=="") igmp="null";
+            rrm = data[s,"rrm"]; if (rrm=="") rrm="null";
+            wnm = data[s,"wnm"]; if (wnm=="") wnm="null";
+            bsdif = data[s,"bsd"]; if (bsdif=="") bsdif="null";
+            mapv = data[s,"map"]; if (mapv=="") mapv="null";
+            maptype = data[s,"MapBSSType"]; if (maptype=="") maptype="null";
+            macf = esc(data[s,"macfilter"]);
+            item = sprintf("{\"section\":\"%s\",\"ifname\":\"%s\",\"ssid\":\"%s\",\"band\":\"%s\",\"disabled\":%s,\"hidden\":%s,\"encryption\":\"%s\",\"vifidx\":%s,\"noforwarding\":%s,\"wpsdevicename\":\"%s\",\"mbssmaxstanum\":%s,\"wmm\":%s,\"igmpsnenable\":%s,\"rrm\":%s,\"wnm\":%s,\"bsd\":%s,\"map\":%s,\"mapbsstype\":%s,\"macfilter\":\"%s\"}",
+                esc(s), ifname, esc(ssid_s), band, disabled, hidden, enc, vifjson, nof, wps, mbss, wmm, igmp, rrm, wnm, bsdif, mapv, maptype, macf);
+            is_custom = (vifn >= 7 || has_custom[s]) ? "true" : "false";
+            debug = debug (dcount ? "," : "") sprintf("{\"section\":\"%s\",\"mode\":\"%s\",\"ssid\":\"%s\",\"vifidx\":\"%s\",\"custom_ssid\":\"%s\",\"picked\":%s}",
+                esc(s), esc(data[s,"mode"]), esc(ssid_s), esc(vif), esc(data[s,"custom_ssid"]), is_custom);
+            dcount++;
+            if (vifn >= 7 || has_custom[s]) {
+                custom = custom (ccount ? "," : "") item;
+                ccount++;
+            } else if (net == "guest" || s ~ /guest/i || ssid_s ~ /Guest/i) {
+                guest = guest (gcount ? "," : "") item;
+                gcount++;
+            } else if (ssid_s ~ /Wi[- ]?Fi5/i) {
+                wifi5 = wifi5 (wcount ? "," : "") item;
+                wcount++;
+            }
+        }
+        if (gcount > 0) guest = "[" guest "]"; else guest = "[]";
+        if (wcount > 0) wifi5 = "[" wifi5 "]"; else wifi5 = "[]";
+        if (ccount > 0) custom = "[" custom "]"; else custom = "[]";
+        if (dcount > 0) debug = "[" debug "]"; else debug = "[]";
+        if (seen_count > 0) sections = "[" sections "]"; else sections = "[]";
+        if (iface_count > 0) ifaces = "[" ifaces "]"; else ifaces = "[]";
+        printf "guest=%s\n", guest;
+        printf "wifi5=%s\n", wifi5;
+        printf "custom=%s\n", custom;
+        printf "debug_custom=%s\n", debug;
+        printf "debug_sections=%s\n", sections;
+        printf "debug_ifaces=%s\n", ifaces;
+    }'
+}
+
+parse_iwinfo() {
+    awk '
+    function esc(s) { gsub(/\\/,"\\\\",s); gsub(/"/,"\\\"",s); return s }
+    {
+        line = $0
+        if (match(line, /ESSID:[[:space:]]*(.*)$/, m)) ssid = m[1]
+        if (match(line, /Access Point:[[:space:]]*([0-9A-Fa-f:]+)/, m)) bssid = m[1]
+        if (match(line, /Mode:[[:space:]]*([^ ]+)/, m)) mode = m[1]
+        if (match(line, /Channel:[[:space:]]*([0-9]+)/, m)) channel = m[1]
+        if (match(line, /\(([0-9.]+[[:space:]]*GHz)\)/, m)) freq = m[1]
+        if (match(line, /Tx-Power:[[:space:]]*([-0-9]+)/, m)) tx = m[1]
+        if (match(line, /Link Quality:[[:space:]]*([^ ]+)/, m)) quality = m[1]
+        if (match(line, /Signal:[[:space:]]*([-0-9]+)/, m)) signal = m[1]
+        if (match(line, /Noise:[[:space:]]*([-0-9]+)/, m)) noise = m[1]
+        if (match(line, /Bit Rate:[[:space:]]*([0-9.]+)/, m)) rate = m[1]
+        if (match(line, /HW Mode\(s\):[[:space:]]*(.*)$/, m)) hw = m[1]
+    }
+    END {
+        if (channel == "") channel = "null";
+        if (tx == "") tx = "null";
+        if (signal == "") signal = "null";
+        if (noise == "") noise = "null";
+        if (rate == "") rate = "null";
+        printf("{\"ssid\":\"%s\",\"bssid\":\"%s\",\"mode\":\"%s\",\"channel\":%s,\"frequency\":\"%s\",\"tx_power_dbm\":%s,\"bit_rate_mbps\":%s,\"quality\":\"%s\",\"signal\":%s,\"noise\":%s,\"hw_modes\":\"%s\"}",
+            esc(ssid), esc(bssid), esc(mode), channel, esc(freq), tx, rate, esc(quality), signal, noise, esc(hw))
+    }'
+}
+
+UCI_RAW="$(fetch_uci)"
+IWINFO_RAW="$(fetch_iwinfo)"
+MESH_RAW="$(fetch_mesh)"
+UCI_RAW_LEN="$(printf "%s" "$UCI_RAW" | wc -c | tr -d ' ')"
+UCI_RAW_HEAD="$(printf "%s\n" "$UCI_RAW" | head -n 3 | sed ':a;N;$!ba;s/\\/\\\\/g; s/\"/\\\"/g; s/\n/\\\\n/g')"
+
+if [ -z "$UCI_RAW" ] && [ -z "$IWINFO_RAW" ]; then
+    echo "{\"ok\":false,\"error\":\"no data\"}"
+    exit 0
+fi
+
+UCI_PARSED="$(printf "%s\n" "$UCI_RAW" | parse_uci)"
+UCI_WL0="$(printf "%s\n" "$UCI_PARSED" | awk -F= '/^wl0=/{print $2}')"
+UCI_WL1="$(printf "%s\n" "$UCI_PARSED" | awk -F= '/^wl1=/{print $2}')"
+UCI_GUEST="$(printf "%s\n" "$UCI_PARSED" | awk -F= '/^guest=/{print $2}')"
+UCI_WIFI5="$(printf "%s\n" "$UCI_PARSED" | awk -F= '/^wifi5=/{print $2}')"
+UCI_CUSTOM="$(printf "%s\n" "$UCI_PARSED" | awk -F= '/^custom=/{print $2}')"
+UCI_DEBUG_CUSTOM="$(printf "%s\n" "$UCI_PARSED" | awk -F= '/^debug_custom=/{print $2}')"
+UCI_DEBUG_SECTIONS="$(printf "%s\n" "$UCI_PARSED" | awk -F= '/^debug_sections=/{print $2}')"
+UCI_DEBUG_IFACES="$(printf "%s\n" "$UCI_PARSED" | awk -F= '/^debug_ifaces=/{print $2}')"
+if [ -z "$UCI_WL0" ]; then UCI_WL0="{}"; fi
+if [ -z "$UCI_WL1" ]; then UCI_WL1="{}"; fi
+if [ -z "$UCI_GUEST" ]; then UCI_GUEST="[]"; fi
+if [ -z "$UCI_WIFI5" ]; then UCI_WIFI5="[]"; fi
+if [ -z "$UCI_CUSTOM" ]; then UCI_CUSTOM="[]"; fi
+if [ -z "$UCI_DEBUG_CUSTOM" ]; then UCI_DEBUG_CUSTOM="[]"; fi
+if [ -z "$UCI_DEBUG_SECTIONS" ]; then UCI_DEBUG_SECTIONS="[]"; fi
+if [ -z "$UCI_DEBUG_IFACES" ]; then UCI_DEBUG_IFACES="[]"; fi
+
+IW0_RAW="$(printf "%s\n" "$IWINFO_RAW" | awk 'BEGIN{p=1} /---SPLIT---/{p=0} p{print}')"
+IW1_RAW="$(printf "%s\n" "$IWINFO_RAW" | awk 'BEGIN{p=0} /---SPLIT---/{p=1; next} p{print}')"
+IW0_JSON="{}"
+IW1_JSON="{}"
+if [ -n "$IW0_RAW" ]; then IW0_JSON="$(printf "%s\n" "$IW0_RAW" | parse_iwinfo)"; fi
+if [ -n "$IW1_RAW" ]; then IW1_JSON="$(printf "%s\n" "$IW1_RAW" | parse_iwinfo)"; fi
+
+mesh_switch="$(printf "%s\n" "$MESH_RAW" | sed -n '1p')"
+mesh_version="$(printf "%s\n" "$MESH_RAW" | sed -n '2p')"
+mesh_support="$(printf "%s\n" "$MESH_RAW" | sed -n '3p')"
+mesh_feature="$(printf "%s\n" "$MESH_RAW" | sed -n '4p')"
+mesh_netmode="$(printf "%s\n" "$MESH_RAW" | sed -n '5p')"
+mesh_capmode="$(printf "%s\n" "$MESH_RAW" | sed -n '6p')"
+mesh_role="$(printf "%s\n" "$MESH_RAW" | sed -n '7p')"
+mesh_pid_mapd="$(printf "%s\n" "$MESH_RAW" | sed -n '8p')"
+mesh_pid_topomon="$(printf "%s\n" "$MESH_RAW" | sed -n '9p')"
+
+mesh_enabled_json="$(to_bool "$mesh_switch")"
+mesh_support_json="$(to_bool "$mesh_support")"
+mesh_feature_json="$(to_bool "$mesh_feature")"
+mesh_version_json="$(printf "%s" "$mesh_version" | sed 's/\\/\\\\/g; s/"/\\"/g')"
+
+mesh_netmode_json="$(printf "%s" "$mesh_netmode" | sed 's/\\/\\\\/g; s/"/\\"/g')"
+mesh_capmode_json="$(printf "%s" "$mesh_capmode" | sed 's/\\/\\\\/g; s/"/\\"/g')"
+mesh_role_json="$(printf "%s" "$mesh_role" | sed 's/\\/\\\\/g; s/"/\\"/g')"
+mesh_mapd_json="$(test -n "$mesh_pid_mapd" && echo true || echo false)"
+mesh_topomon_json="$(test -n "$mesh_pid_topomon" && echo true || echo false)"
+
+# mesh_state: 0=off,1=on,2=in mesh,3=joining
+mesh_state="0"
+if [ "$mesh_switch" = "1" ]; then
+    mesh_state="1"
+    if [ "$mesh_netmode" = "whc_cap" ] || [ "$mesh_netmode" = "whc_re" ] || [ "$mesh_netmode" = "agent" ]; then
+        mesh_state="2"
+    fi
+    if [ "$mesh_role" = "controller" ] || [ "$mesh_role" = "agent" ]; then
+        mesh_state="2"
+    fi
+    if [ "$mesh_capmode" = "ap" ]; then
+        mesh_state="2"
+    fi
+fi
+
+echo "{\"ok\":true,\"wl0\":{\"uci\":$UCI_WL0,\"iwinfo\":$IW0_JSON},\"wl1\":{\"uci\":$UCI_WL1,\"iwinfo\":$IW1_JSON},\"extras\":{\"guest\":$UCI_GUEST,\"wifi5\":$UCI_WIFI5,\"custom\":$UCI_CUSTOM},\"debug_custom\":$UCI_DEBUG_CUSTOM,\"debug_sections\":$UCI_DEBUG_SECTIONS,\"debug_ifaces\":$UCI_DEBUG_IFACES,\"debug_uci_len\":$UCI_RAW_LEN,\"debug_uci_head\":\"$UCI_RAW_HEAD\",\"mesh\":{\"enabled\":$mesh_enabled_json,\"version\":\"$mesh_version_json\",\"support\":$mesh_support_json,\"easymesh\":$mesh_feature_json,\"state\":$mesh_state,\"netmode\":\"$mesh_netmode_json\",\"cap_mode\":\"$mesh_capmode_json\",\"role\":\"$mesh_role_json\",\"proc_mapd\":$mesh_mapd_json,\"proc_topomon\":$mesh_topomon_json}}"

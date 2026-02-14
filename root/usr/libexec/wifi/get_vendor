@@ -1,0 +1,71 @@
+#!/bin/sh
+
+# === 请务必填回你的 API KEY ===
+API_KEY="$(uci -q get wifi_monitor.main.api_key)"
+# ===========================
+
+LOG_FILE="/tmp/vendor_debug.log"
+echo "Content-type: text/plain; charset=utf-8"
+echo ""
+
+# 1. 改进的提取逻辑：先提取 mac= 后面的所有内容，然后把 %3A 替换回冒号
+RAW_MAC=$(echo "$QUERY_STRING" | sed -n 's/.*mac=\([^&]*\).*/\1/p')
+# 将 %3A 或 %3a 替换为冒号，并转大写
+MAC=$(echo "$RAW_MAC" | sed 's/%3[aA]/:/g' | tr 'a-z' 'A-Z')
+
+echo "[$(date)] RAW: $QUERY_STRING -> Parsed MAC: $MAC" >> "$LOG_FILE"
+
+if [ -z "$MAC" ] || [ ${#MAC} -lt 12 ]; then
+    echo "ERROR: Invalid MAC"
+    echo "[$(date)] Error: Invalid MAC format: $MAC" >> "$LOG_FILE"
+    exit 0
+fi
+
+if [ -z "$API_KEY" ]; then
+    echo "ERROR: Missing API Key"
+    echo "[$(date)] Error: API key not set" >> "$LOG_FILE"
+    exit 0
+fi
+
+
+# 2. 缓存处理
+CACHE_FILE="/tmp/mac_vendor_cache.txt"
+PREFIX=$(echo "$MAC" | cut -d: -f1,2,3 | tr -d ':')
+
+if [ -f "$CACHE_FILE" ]; then
+    CACHED=$(grep -i "^$PREFIX|" "$CACHE_FILE" | head -n 1 | cut -d'|' -f2)
+    if [ -n "$CACHED" ]; then
+        echo "$CACHED"
+        exit 0
+    fi
+fi
+
+# 3. API 请求
+# 增加 --interface (可选) 和更详细的错误输出
+echo "[$(date)] Fetching API for $MAC..." >> "$LOG_FILE"
+# 捕获 stderr 以便调试 curl 自身的问题
+RES=$(/usr/bin/curl -k -s --connect-timeout 5 "https://api.maclookup.app/v2/macs/$MAC?apiKey=$API_KEY" 2>>"$LOG_FILE")
+
+echo "[$(date)] API Result: $RES" >> "$LOG_FILE"
+
+# 4. 解析 JSON
+VENDOR_RAW=$(echo "$RES" | grep -o '"company"\s*:\s*"[^"]*"' | sed 's/.*"company"\s*:\s*"\([^"]*\)".*/\1/')
+
+if [ -n "$VENDOR_RAW" ] && [ "$VENDOR_RAW" != "null" ]; then
+    # 解码 Unicode (处理 \u0026 -> & 等)
+    # 这里的 printf 技巧可以将 \u 转换成可见字符
+    VENDOR=$(echo -e "$(echo "$VENDOR_RAW" | sed 's/\\u\([0-9a-fA-F]\{4\}\)/\\x\1/g' | sed 's/\\x00/\x/g')")
+    
+    # 如果解码失败，回退到原始字符串
+    [ -z "$VENDOR" ] && VENDOR="$VENDOR_RAW"
+
+    echo "$PREFIX|$VENDOR" >> "$CACHE_FILE"
+    echo "$VENDOR"
+else
+    if echo "$RES" | grep -q '"found"\s*:\s*false'; then
+        echo "Unknown Device"
+        echo "$PREFIX|Unknown Device" >> "$CACHE_FILE"
+    else
+        echo "ERROR: API Fail"
+    fi
+fi
