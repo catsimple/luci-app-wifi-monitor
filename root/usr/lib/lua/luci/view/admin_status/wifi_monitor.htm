@@ -1681,8 +1681,9 @@ createApp({
     },
     computed: {
         sortedClients() {
-            if (this.sort.order === 0) return [...this.clients];
-            return [...this.clients].sort((a, b) => {
+            const list = Array.isArray(this.clients) ? this.clients : [];
+            if (this.sort.order === 0) return [...list];
+            return [...list].sort((a, b) => {
                 let v1 = a[this.sort.key];
                 let v2 = b[this.sort.key];
                 if (this.sort.key === 'ip') {
@@ -2891,15 +2892,28 @@ createApp({
             this.loading = true;
             try {
                 const res = await fetch('/cgi-bin/luci/admin/status/wifi_json');
-                this.clients = await res.json();
+                const data = await res.json();
+                if (Array.isArray(data)) {
+                    this.clients = data;
+                } else if (data && Array.isArray(data.clients)) {
+                    this.clients = data.clients;
+                } else if (data && Array.isArray(data.data)) {
+                    this.clients = data.data;
+                } else {
+                    this.clients = [];
+                }
                 this.updateVendors();
                 if (Date.now() - this.aclLastFetch > 8000) {
                     this.fetchAclList();
                 }
-            } catch (e) { console.error(e); }
+            } catch (e) {
+                console.error(e);
+                this.clients = [];
+            }
             finally { this.loading = false; }
         },
         async updateVendors() {
+            if (!Array.isArray(this.clients)) return;
             for (let c of this.clients) {
                 const prefix = c.mac.substring(0, 8).toUpperCase();
                 if (!this.vendorCache[prefix]) {
@@ -3110,8 +3124,6 @@ createApp({
 </script>
 
 <%+footer%>
-
-
 
 
 
